@@ -593,6 +593,34 @@ $ tpm2_hash -g sha256 --hex message
 
 ## Certify
 
+<ins><b>tpm2_certify</b></ins>
+
+`tpm2_certify` proves that an object with a specific NAME is loaded in the TPM. By certifying that the object is loaded, the TPM warrants that a public area with a given Name is self consistent and associated with a valid sensitive area:
+```
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
+$ tpm2_create -C primary_sh.ctx -g sha256 -G ecc -u certify.pub -r certify.priv
+$ tpm2_load -C primary_sh.ctx -u certify.pub -r certify.priv -c certify.ctx
+$ tpm2_certify -C certify.ctx -c primary_sh.ctx -g sha256 -o attest.out -s sig.out
+$ tpm2_verifysignature -c certify.ctx -g sha256 -m attest.out -s sig.out
+```
+The `attest.out` is:
+- TPM2B_ATTEST ->
+	- TPMS_ATTEST ->
+		- TPMI_ST_ATTEST with the value of TPM_ST_ATTEST_CERTIFY, it determines the data type of TPMU_ATTEST 
+		- TPMU_ATTEST ->
+			- TPMS_CERTIFY_INFO ->
+				- Qualified Name of the certified object
+
+<ins><b>tpm2_certifyX509certutil</b></ins>
+
+`tpm2_certifyX509certutil` generates a partial certificate that is suitable as the third input parameter for TPM2_certifyX509 command, however, TPM2_CertifyX509 is not implemented in tpm2-tools yet. 
+
+The purpose of TPM2_CertifyX509 is to generate an X.509 certificate that proves an object with a specific public key and attributes is loaded in the TPM. In contrast to TPM2_Certify, which uses a TCG-defined data structure to convey attestation information (`attest.out`), TPM2_CertifyX509 encodes the attestation information in a DER-encoded X.509 certificate that is compliant with RFC5280 Internet X.509 Public Key Infrastructure Certificate and Certificate Revocation List (CRL) Profile.
+
+<ins><b>tpm2_certifycreation</b></ins>
+
+
+<ins><b>tpm2_nvcertify</b></ins>
 
 
 ## NV Storage
