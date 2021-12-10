@@ -10,6 +10,7 @@ An entry guide to Trusted Platform Module (TPM).
 - **[Behaviour of Microsoft TPM2.0 Simulator](#behaviour-of-microsoft-tpm20-simulator)**
 - **[Examples](#examples)**
     - **[Startup](#startup)**
+	- **[Display TPM Capabilities](#display-tpm-capabilities)**
     - **[Self Test](#self-test)**
     - **[Create Keys](#create-keys)**
     - **[Persistent Key](#persistent-key)**
@@ -23,6 +24,7 @@ An entry guide to Trusted Platform Module (TPM).
     - **[Hashing](#hashing)**
     - **[Certify](#certify)**
     - **[NV Storage](#nv-storage)**
+	- **[Read EK Certificate](#read-ek-certificate)**
     - **[Policy](#policy)**
     - **[Import Externally Created key](#import-externally-created-key)**
     - **[EK Credential](#ek-credential)**
@@ -224,6 +226,126 @@ Type of startup and shutdown operations:
 1. TPM reset: Startup(TPM_SU_CLEAR) that follows a Shutdown(TPM_SU_CLEAR), or Startup(TPM_SU_CLEAR) for which there was no preceding Shutdown() (a disorderly shutdown). A TPM reset is roughly analogous to a **reboot** of a platform.
 2. TPM restart: Startup(TPM_SU_CLEAR) that follows a Shutdown(TPM_SU_STATE). This indicates a system that is restoring the OS from non-volatile storage, sometimes called **"hibernation"**. For a TPM restart, the TPM restores values saved by the preceding Shutdown(TPM_SU_STATE) except that all the PCR are set to their default initial state.
 3. TPM resume: Startup(TPM_SU_STATE) that follows a Shutdown(TPM_SU_STATE). This indicates a system that is restarting the OS from RAM memory, sometimes called **"sleep"**. TPM Resume restores all of the state that was saved by Shutdown(STATE), including those PCR that are designated as being preserved by Startup(STATE). PCR not designated as being preserved, are reset to their default initial state.
+
+## Display TPM Capabilities
+
+Return a list of supported capability names:
+```
+$ tpm2_getcap -l
+- algorithms
+- commands
+- pcrs
+- properties-fixed
+- properties-variable
+- ecc-curves
+- handles-transient
+- handles-persistent
+- handles-permanent
+- handles-pcr
+- handles-nv-index
+- handles-loaded-session
+- handles-saved-session
+```
+
+Find TPM2.0 library specification revision by:
+```
+$ tpm2_getcap properties-fixed
+TPM2_PT_FAMILY_INDICATOR:
+  raw: 0x322E3000
+  value: "2.0"
+TPM2_PT_LEVEL:
+  raw: 0
+TPM2_PT_REVISION:
+  raw: 0x74
+  value: 1.16 <----------- revision 1.16
+TPM2_PT_DAY_OF_YEAR:
+  raw: 0xF
+TPM2_PT_YEAR:
+  raw: 0x7E0
+TPM2_PT_MANUFACTURER:
+  raw: 0x49465800
+  value: "IFX"
+TPM2_PT_VENDOR_STRING_1:
+  raw: 0x534C4239
+  value: "SLB9"
+TPM2_PT_VENDOR_STRING_2:
+  raw: 0x36373000
+  value: "670"
+TPM2_PT_VENDOR_STRING_3:
+  raw: 0x0
+  value: ""
+TPM2_PT_VENDOR_STRING_4:
+  raw: 0x0
+  value: ""
+TPM2_PT_VENDOR_TPM_TYPE:
+  raw: 0x0
+TPM2_PT_FIRMWARE_VERSION_1:
+  raw: 0x7003D
+TPM2_PT_FIRMWARE_VERSION_2:
+  raw: 0xAE100
+TPM2_PT_INPUT_BUFFER:
+  raw: 0x400
+TPM2_PT_HR_TRANSIENT_MIN:
+  raw: 0x3
+TPM2_PT_HR_PERSISTENT_MIN:
+  raw: 0x7
+TPM2_PT_HR_LOADED_MIN:
+  raw: 0x3
+TPM2_PT_ACTIVE_SESSIONS_MAX:
+  raw: 0x40
+TPM2_PT_PCR_COUNT:
+  raw: 0x18
+TPM2_PT_PCR_SELECT_MIN:
+  raw: 0x3
+TPM2_PT_CONTEXT_GAP_MAX:
+  raw: 0xFFFF
+TPM2_PT_NV_COUNTERS_MAX:
+  raw: 0x8
+TPM2_PT_NV_INDEX_MAX:
+  raw: 0x680
+TPM2_PT_MEMORY:
+  raw: 0x6
+TPM2_PT_CLOCK_UPDATE:
+  raw: 0x80000
+TPM2_PT_CONTEXT_HASH:
+  raw: 0xB
+TPM2_PT_CONTEXT_SYM:
+  raw: 0x6
+TPM2_PT_CONTEXT_SYM_SIZE:
+  raw: 0x80
+TPM2_PT_ORDERLY_COUNT:
+  raw: 0xFF
+TPM2_PT_MAX_COMMAND_SIZE:
+  raw: 0x500
+TPM2_PT_MAX_RESPONSE_SIZE:
+  raw: 0x500
+TPM2_PT_MAX_DIGEST:
+  raw: 0x20
+TPM2_PT_MAX_OBJECT_CONTEXT:
+  raw: 0x3B8
+TPM2_PT_MAX_SESSION_CONTEXT:
+  raw: 0xEB
+TPM2_PT_PS_FAMILY_INDICATOR:
+  raw: 0x1
+TPM2_PT_PS_LEVEL:
+  raw: 0x0
+TPM2_PT_PS_REVISION:
+  raw: 0x100
+TPM2_PT_PS_DAY_OF_YEAR:
+  raw: 0x0
+TPM2_PT_PS_YEAR:
+  raw: 0x0
+TPM2_PT_SPLIT_MAX:
+  raw: 0x80
+TPM2_PT_TOTAL_COMMANDS:
+  raw: 0x5A
+TPM2_PT_LIBRARY_COMMANDS:
+  raw: 0x59
+TPM2_PT_VENDOR_COMMANDS:
+  raw: 0x1
+TPM2_PT_NV_BUFFER_MAX:
+  raw: 0x300
+```
 
 ## Self Test
 
@@ -512,6 +634,28 @@ $ tpm2_nvwrite 0x01000000 -C p -i data
 $ tpm2_nvread 0x01000000 -C p -o out
 $ diff data out
 $ tpm2_nvundefine 0x01000000 -C p
+```
+
+## Read EK Certificate
+
+This section only work on hardware TPM.
+
+The issuing certificate authority (CA) and certificate revocation list (CRL) information of an EK certificate can be found in the EK certificate "X509v3 extensions" field.
+
+Read RSA & ECC endorsement key certificates from NV:
+```
+# RSA
+$ tpm2_nvread 0x1c00002 -o rsa_ek.crt.der
+$ openssl x509 -inform der -in rsa_ek.crt.der -text
+
+# ECC
+$ tpm2_nvread 0x1c0000a -o ecc_ek.crt.der
+$ openssl x509 -inform der -in ecc_ek.crt.der -text
+```
+
+Read RSA & ECC endorsement key certificates using tpm2-tools:
+```
+$ tpm2_getekcertificate -o rsa_ek.crt.der -o ecc_ek.crt.der
 ```
 
 ## Policy
