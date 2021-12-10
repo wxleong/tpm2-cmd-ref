@@ -9,6 +9,8 @@ An entry guide to Trusted Platform Module (TPM).
 - **[Using Hardware TPM](#using-hardware-tpm)**
 - **[Behaviour of Microsoft TPM2.0 Simulator](#behaviour-of-microsoft-tpm20-simulator)**
 - **[Examples](#examples)**
+    - **[Startup](#startup)**
+    - **[Self Test](#self-test)**
     - **[Create Keys](#create-keys)**
     - **[Persistent Key](#persistent-key)**
     - **[Hierarchy Control](#hierarchy-control)**
@@ -19,7 +21,9 @@ An entry guide to Trusted Platform Module (TPM).
     - **[Encryption & Decryption](#encryption--decryption)**
     - **[Signing & Verification](#signing--verification)**
     - **[Hashing](#hashing)**
+    - **[Certify](#certify)**
     - **[NV Storage](#nv-storage)**
+    - **[Policy](#policy)**
     - **[Import Externally Created key](#import-externally-created-key)**
     - **[EK Credential](#ek-credential)**
     - **[Secure Key Transfer](#secure-key-transfer)**
@@ -172,7 +176,7 @@ Test installation:
 
 # Using Hardware TPM
 
-If you have hardware TPM enabled, set the TCTI to device node `tpm0` or `tpmrm0`:
+If you have hardware TPM enabled on your Linux platform (one example is using Raspberry Pi 4 [[8]](#8)), set the TCTI to device node `tpm0` or `tpmrm0`:
 ```
 $ export TPM2TOOLS_TCTI="device:/dev/tpmrm0"
 $ export TPM2TSSENGINE_TCTI="device:/dev/tpmrm0"
@@ -187,24 +191,43 @@ $ export TPM2TSSENGINE_TCTI="device:/dev/tpm0"
 
 The Microsoft TPM2.0 simulator [[2]](#2) stores all persistent information in a file (`NVChip`). Find the file in the directory you launched the simulator. If you wish to start fresh, erase the file before launching the simulator.
 
-Perform TPM startup after launching the simulator, otherwise, all subsequent commands will fail with the error code 0x100 (TPM not initialized by TPM2_Startup)
+Perform TPM startup after launching the simulator, otherwise, all subsequent commands will fail with the error code 0x100 (TPM not initialized by TPM2_Startup):
 ```
 $ tpm2_startup -c
 ```
 
-Keep an eye on the TPM transient and session memory.
+Keep an eye on the TPM transient and session memory:
 ```
 $ tpm2_getcap handles-transient
 $ tpm2_getcap handles-loaded-session
 ```
 
-Once it hit 3 handles, the next command may fail with the error code 0x902 (out of memory for object contexts) / 0x903 (out of memory for session contexts). Clear the transient memory.
+Once it hit 3 handles, the next command may fail with the error code 0x902 (out of memory for object contexts) / 0x903 (out of memory for session contexts). To clear the transient memory:
 ```
 $ tpm2_flushcontext -t
 $ tpm2_flushcontext -l
 ```
 
 # Examples
+
+## Startup
+
+Type of startup and shutdown operations:
+
+- `tpm2_startup -c` to perform Startup(TPM_SU_CLEAR)
+- `tpm2_startup` to perform Startup(TPM_SU_STATE)
+- `tpm2_shutdown -c` to perform Shutdown(TPM_SU_CLEAR)
+- `tpm2_shutdown` to perform Shutdown(TPM_SU_STATE)
+
+3 methods of preparing a TPM for operation:
+
+1. TPM reset: Startup(TPM_SU_CLEAR) that follows a Shutdown(TPM_SU_CLEAR), or Startup(TPM_SU_CLEAR) for which there was no preceding Shutdown() (a disorderly shutdown). A TPM reset is roughly analogous to a **reboot** of a platform.
+2. TPM restart: Startup(TPM_SU_CLEAR) that follows a Shutdown(TPM_SU_STATE). This indicates a system that is restoring the OS from non-volatile storage, sometimes called **"hibernation"**. For a TPM restart, the TPM restores values saved by the preceding Shutdown(TPM_SU_STATE) except that all the PCR are set to their default initial state.
+3. TPM resume: Startup(TPM_SU_STATE) that follows a Shutdown(TPM_SU_STATE). This indicates a system that is restarting the OS from RAM memory, sometimes called **"sleep"**. TPM Resume restores all of the state that was saved by Shutdown(STATE), including those PCR that are designated as being preserved by Startup(STATE). PCR not designated as being preserved, are reset to their default initial state.
+
+## Self Test
+
+
 
 ## Create Keys
 
@@ -338,7 +361,7 @@ TPM clear highlights:
 For practice, try this on simulator. Use hardware TPM at your own risk. 
 
 Before we start, understand the basic:
-- failedTries (TPM2_PT_LOCKOUT_COUNTER): Increment when an authorization failed
+- failedTries (TPM2_PT_LOCKOUT_COUNTER): Increment when an authorization failed or unorderly shutdown
 - maxTries (TPM2_PT_MAX_AUTH_FAIL): In lockout mode when failedTries reaches this value
 - recoveryTime (TPM2_PT_LOCKOUT_INTERVAL): This value indicates the rate at which failedTries is decremented in seconds
 - lockoutRecovery (TPM2_PT_LOCKOUT_RECOVERY): This value indicates the retry delay in seconds after an authorization failure using lockout auth
@@ -442,6 +465,10 @@ $ echo "some message" > message
 $ tpm2_hash -g sha256 --hex message
 ```
 
+## Certify
+
+
+
 ## NV Storage
 
 NV define, write, and read:
@@ -483,7 +510,10 @@ $ diff data out
 $ tpm2_nvundefine 0x01000000 -C p
 ```
 
-# Import Externally Created key
+## Policy
+
+
+## Import Externally Created key
 
 RSA key:
 ```
@@ -506,7 +536,7 @@ $ tpm2_import -C primary_sh.ctx -G hmac -i raw.key -u hmackey_imported.pub -r hm
 $ tpm2_load -C primary_sh.ctx -u hmackey_imported.pub -r hmackey_imported.priv -c hmackey_imported.ctx
 ```
 
-# EK Credential 
+## EK Credential 
 
 Create EK and AK:
 ```
@@ -531,13 +561,13 @@ $ tpm2_flushcontext session.ctx
 $ diff data.decipher data.clear
 ```
 
-# Secure Key Transfer
+## Secure Key Transfer
 
 Examples showing here are in the following settings:
 - Both sender and recipient resided on a same TPM. Alternatively, it is possible to have recipient on another TPM.
 - Sender is a TPM. Alternatively, it is possible to have a non-TPM sender, check [[6]](#6) for detailed implementation guide.
 
-## Without Credential Protection
+### Without Credential Protection
 
 \[Both\] Create duplication policy:
 ```
@@ -574,7 +604,7 @@ $ tpm2_import -C recipient_parent.ctx -u rsakey.pub -r rsakey_imported.prv -i du
 $ tpm2_load -C recipient_parent.ctx -u rsakey.pub -r rsakey_imported.prv -c rsakey_imported.ctx
 ```
 
-## With Credential Protection
+### With Credential Protection
 
 \[Both\] Create duplication policy:
 ```
@@ -771,6 +801,8 @@ $ openssl req -in eckey.csr.pem -text -noout
 ```
 
 #### Conversion to PEM Encoded Key
+
+In the event that TPM key is not created using `tpm2tss-genkey`, use the following tool to make the conversion.
 
 Build tool:
 ```
@@ -970,6 +1002,7 @@ Please refer to [[7]](#7).
 <a id="5">[5] https://github.com/tpm2-software/tpm2-tss-engine</a><br>
 <a id="6">[6] https://github.com/Infineon/ek-based-onboarding-optiga-tpm</a><br>
 <a id="7">[7] https://github.com/Infineon/pkcs11-optiga-tpm</a><br>
+<a id="8">[8] https://www.infineon.com/dgdl/Infineon-OPTIGA_SLx_9670_TPM_2.0_Pi_4-ApplicationNotes-v07_19-EN.pdf?fileId=5546d4626c1f3dc3016c3d19f43972eb</a><br>
 
 # License
 
