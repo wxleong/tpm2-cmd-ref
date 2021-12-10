@@ -227,7 +227,11 @@ Type of startup and shutdown operations:
 
 ## Self Test
 
+Self test command causes the TPM to perform a test of its capabilities. `tpm2_selftest -f` (full test is yes) TPM will test all functions. `tpm2_selftest` (full test is no) TPM will only test those functions that have not previously been tested.
 
+Incremental self test causes the TPM to perform a test of the selected algorithms. If the command contains an algorithm that has already been tested, it will not be tested again. `tpm2_incrementalselftest` will return a list of algorithms left to be tested. Provide a list of algorithms to the command to start a test, e.g., `tpm2_incrementalselftest rsa ecc` will test the RSA & ECC algorithms and return a list of algorithms left to be tested.
+
+`tpm2_gettestresult` returns manufacturer-specific information regarding the results of a self-test and an indication of the test status.
 
 ## Create Keys
 
