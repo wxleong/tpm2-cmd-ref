@@ -25,6 +25,7 @@ An entry guide to Trusted Platform Module (TPM).
     - **[Certify](#certify)**
     - **[NV Storage](#nv-storage)**
 	- **[Read EK Certificate](#read-ek-certificate)**
+    - **[Audit](#audit)**
     - **[Policy](#policy)**
     - **[Import Externally Created key](#import-externally-created-key)**
     - **[EK Credential](#ek-credential)**
@@ -624,11 +625,13 @@ The `attest.out` is:
 			- TPMS_CERTIFY_INFO ->
 				- Qualified Name of the certified object
 
+<!-- Needs TPM2_CertifyX509 but has not implemented in tpm2-tools yet
 <ins><b>tpm2_certifyX509certutil</b></ins>
 
 `tpm2_certifyX509certutil` generates a partial certificate that is suitable as the third input parameter for TPM2_certifyX509 command, however, TPM2_CertifyX509 is not implemented in tpm2-tools yet. 
 
 The purpose of TPM2_CertifyX509 is to generate an X.509 certificate that proves an object with a specific public key and attributes is loaded in the TPM. In contrast to TPM2_Certify, which uses a TCG-defined data structure to convey attestation information (`attest.out`), TPM2_CertifyX509 encodes the attestation information in a DER-encoded X.509 certificate that is compliant with RFC5280 Internet X.509 Public Key Infrastructure Certificate and Certificate Revocation List (CRL) Profile.
+-->
 
 <ins><b>tpm2_certifycreation</b></ins>
 
@@ -748,6 +751,39 @@ Read RSA & ECC endorsement key certificates using tpm2-tools:
 ```
 $ tpm2_getekcertificate -o rsa_ek.crt.der -o ecc_ek.crt.der
 ```
+
+## Audit
+
+<ins><b>tpm2_getsessionauditdigest</b></ins>
+
+Retrieve the session audit digest attestation data from the TPM. The attestation data includes the session audit digest and a signature over the session audit digest:
+
+```
+$ tpm2_createprimary -C e -g sha256 -G ecc -c primary_eh.ctx
+$ tpm2_create -C primary_eh.ctx -g sha256 -G ecc -u signing.key.pub -r signing.key.priv
+$ tpm2_load -C primary_eh.ctx -u signing.key.pub -r signing.key.priv -c signing.key.ctx
+
+$ tpm2_startauthsession -S session.ctx --audit-session
+$ tpm2_getrandom 1 --hex -S session.ctx
+$ tpm2_getsessionauditdigest -c signing.key.ctx -g sha256 -m attest.out -s sig.out -S session.ctx
+$ tpm2_flushcontext session.ctx
+
+$ tpm2_verifysignature -c signing.key.ctx -g sha256 -m attest.out -s sig.out
+```
+
+<!-- command not supported
+<ins><b>tpm2_setcommandauditstatus</b></ins>
+
+Add or remove TPM2 commands to the audited commands list.
+-->
+
+<!-- command not supported
+<ins><b>tpm2_getcommandauditdigest</b></ins>
+
+Retrieve the command audit attestation data from the TPM. The attestation data includes the audit digest of the commands in the setlist setup using the command `tpm2_setcommandauditstatus`. Also the attestation data includes the digest of the list of commands setup for audit. The audit digest algorith is setup in the `tpm2_setcommandauditstatus`.
+       
+tpm2_getcommandauditdigest -c signing.key.ctx -g sha256 -m attest.out -s sig.out
+-->
 
 ## Policy
 
