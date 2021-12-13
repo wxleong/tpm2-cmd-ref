@@ -787,9 +787,59 @@ tpm2_getcommandauditdigest -c signing.key.ctx -g sha256 -m attest.out -s sig.out
 
 ## Policy
 
-Check policy command code `man tpm2_policycommandcode`.
+### tpm2_policyauthorize
 
-...to be continued
+Allows for mutable policies by tethering to a signing authority.
+
+### tpm2_policyauthorizenv
+
+Allows for mutable policies by referencing to a policy from an NV index. In other words, an object policy is stored in NV and it can be changed any time, hence mutable policy.
+
+### tpm2_policyauthvalue
+
+Enables binding a policy to the authorization value of the authorized TPM object. Enables a policy that requires the object's authentication passphrase be provided. This is equivalent to authenticating using the object passphrase in plaintext !!or HMAC!!, only this enforces it as a policy.
+
+### tpm2_policycommandcode
+
+Check policy command code `man tpm2_policycommandcode` for list of supported commands.
+
+### tpm2_policycountertimer
+
+Enables policy authorization by evaluating the comparison operation on the TPMS_CLOCK_INFO: clock, reset count, restart count, and TPM clock safe flag.
+
+### tpm2_policycphash
+
+Couples a policy with command parameters of the command.
+
+### tpm2_policyduplicationselect
+
+### tpm2_policylocality
+
+### tpm2_policynamehash
+
+### tpm2_policynv
+
+### tpm2_policynvwritten
+
+### tpm2_policyor
+
+### tpm2_policypassword
+
+Enables binding a policy to the authorization value of the authorized TPM object. Enables a policy that requires the object's authentication passphrase be provided. This is equivalent to authenticating using the object passphrase in plaintext, only this enforces it as a policy.
+
+### tpm2_policypcr
+
+### tpm2_policyrestart
+
+### tpm2_policysecret
+
+Couples the authorization of an object to that of an existing object.
+
+### tpm2_policysigned
+
+### tpm2_policytemplate
+
+### tpm2_policyticket
 
 ## Import Externally Created key
 
