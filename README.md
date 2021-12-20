@@ -484,6 +484,17 @@ TPM clear highlights:
 - Set shEnable, ehEnable, phEnable to TRUE
 - Set ownerAuth, endorsementAuth, and lockoutAuth to an empty auth
 - Set ownerPolicy, endorsementPolicy, and lockoutPolicy to an empty policy
+- Change the storage primary seed (SPS) to a new value from the TPM's random number generator
+
+To change the platform primary seed (PPS) to a new value from the TPM's random number generator:
+```
+$ tpm2_changepps
+```
+
+To change the endorsement primary seed (EPS) to a new value from the TPM's random number generator. **This action will change the EK thus the EK certificate will also become unusable.**:
+```
+$ tpm2_changeeps
+```
 
 ## Dictionary Attack Protection
 
