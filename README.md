@@ -249,7 +249,7 @@ $ tpm2_getcap -l
 - handles-saved-session
 ```
 
-Find TPM2.0 library specification revision by:
+Find TPM 2.0 library specification revision [[9]](#9) by:
 ```
 $ tpm2_getcap properties-fixed
 TPM2_PT_FAMILY_INDICATOR:
@@ -1369,6 +1369,7 @@ Please refer to [[7]](#7).
 <a id="6">[6] https://github.com/Infineon/ek-based-onboarding-optiga-tpm</a><br>
 <a id="7">[7] https://github.com/Infineon/pkcs11-optiga-tpm</a><br>
 <a id="8">[8] https://www.infineon.com/dgdl/Infineon-OPTIGA_SLx_9670_TPM_2.0_Pi_4-ApplicationNotes-v07_19-EN.pdf?fileId=5546d4626c1f3dc3016c3d19f43972eb</a><br>
+<a id="9">[9] https://trustedcomputinggroup.org/resource/tpm-library-specification/</a><br>
 
 # License
 
