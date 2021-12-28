@@ -50,7 +50,7 @@ OPTIGA™ TPM 2.0 command reference and code examples.
 
 # Prerequisites
 
-- Tested on: 
+- For simulated TPM 2.0, tested on: 
   ```
   $ lsb_release -a
   No LSB modules are available.
@@ -62,6 +62,8 @@ OPTIGA™ TPM 2.0 command reference and code examples.
   $ uname -a
   Linux ubuntu 5.8.0-59-generic #66~20.04.1-Ubuntu SMP Thu Jun 17 11:14:10 UTC 2021 x86_64 x86_64 x86_64 GNU/Linux
   ```
+- For hardware TPM 2.0, tested on Raspberry Pi 4 Model B with Iridium 9670 TPM 2.0 board [[10]](#10). For more details please visit [[8]](#8).
+
 # Setup
 
 Download package information:
@@ -180,7 +182,7 @@ Test installation:
 
 # Using Hardware TPM
 
-If you have hardware TPM enabled on your Linux platform (one example is using Raspberry Pi 4 [[8]](#8)), set the TCTI to device node `tpm0` or `tpmrm0`:
+If you have hardware TPM enabled on your Linux platform (e.g., Raspberry Pi 4), set the TCTI to device node `tpm0` or `tpmrm0`:
 ```
 $ export TPM2TOOLS_TCTI="device:/dev/tpmrm0"
 $ export TPM2TSSENGINE_TCTI="device:/dev/tpmrm0"
@@ -1368,8 +1370,9 @@ Please refer to [[7]](#7).
 <a id="5">[5] https://github.com/tpm2-software/tpm2-tss-engine</a><br>
 <a id="6">[6] https://github.com/Infineon/ek-based-onboarding-optiga-tpm</a><br>
 <a id="7">[7] https://github.com/Infineon/pkcs11-optiga-tpm</a><br>
-<a id="8">[8] https://www.infineon.com/dgdl/Infineon-OPTIGA_SLx_9670_TPM_2.0_Pi_4-ApplicationNotes-v07_19-EN.pdf?fileId=5546d4626c1f3dc3016c3d19f43972eb</a><br>
+<a id="8">[8] https://github.com/wxleong/tpm2-rpi4</a><br>
 <a id="9">[9] https://trustedcomputinggroup.org/resource/tpm-library-specification/</a><br>
+<a id="10">[10] https://www.infineon.com/cms/en/product/evaluation-boards/iridium9670-tpm2.0-linux/</a><br>
 
 # License
 
