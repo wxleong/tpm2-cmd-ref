@@ -26,6 +26,7 @@ OPTIGA™ TPM 2.0 command reference and code examples.
     - **[Certify](#certify)**
     - **[NV Storage](#nv-storage)**
 	- **[Read EK Certificate](#read-ek-certificate)**
+    - **[PCR](#pcr)**
     - **[Audit](#audit)**
     - **[Policy](#policy)**
     - **[Import Externally Created key](#import-externally-created-key)**
@@ -768,6 +769,36 @@ $ openssl x509 -inform der -in ecc_ek.crt.der -text
 Read RSA & ECC endorsement key certificates using tpm2-tools:
 ```
 $ tpm2_getekcertificate -o rsa_ek.crt.der -o ecc_ek.crt.der
+```
+
+## PCR
+
+PCR bank allocation. In other words, enable/disable PCR banks:
+```
+# enable only sha256 bank
+$ tpm2_pcrallocate sha1:none+sha256:all+sha384:none
+```
+
+Read PCRs:
+```
+$ tpm2_pcrread
+```
+
+Compute and show the hash value of a file without extending to PCR:
+```
+$ echo "foo" > data
+$ tpm2_pcrevent data
+```
+
+Extend a file to PCR:
+```
+$ echo "foo" > data
+$ tpm2_pcrevent 8 data
+```
+
+Extend a hash value to PCR:
+```
+$ tpm2_pcrextend 9:sha256=beefcafebeefcafebeefcafebeefcafebeefcafebeefcafebeefcafebeefcafe
 ```
 
 ## Audit
