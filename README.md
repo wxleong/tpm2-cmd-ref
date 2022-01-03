@@ -30,6 +30,8 @@ OPTIGA™ TPM 2.0 command reference and code examples.
     - **[Audit](#audit)**
     - **[Policy](#policy)**
     - **[Import Externally Created key](#import-externally-created-key)**
+        - **[Under a Parent Key](#under-a-parent-key)**
+        - **[Under Hierarchy](#under-hierarchy)**
     - **[EK Credential](#ek-credential)**
     - **[Secure Key Transfer](#secure-key-transfer)**
         - **[Without Credential Protection](#without-credential-protection)**
@@ -914,6 +916,8 @@ Enables policy authorization by verifying a ticket that represents a validated a
 
 ## Import Externally Created key
 
+### Under a Parent Key
+
 RSA key:
 ```
 $ openssl genrsa -out rsa_private.pem 2048
@@ -933,6 +937,29 @@ HMAC key:
 $ dd if=/dev/urandom of=raw.key bs=1 count=32
 $ tpm2_import -C primary_sh.ctx -G hmac -i raw.key -u hmackey_imported.pub -r hmackey_imported.priv
 $ tpm2_load -C primary_sh.ctx -u hmackey_imported.pub -r hmackey_imported.priv -c hmackey_imported.ctx
+```
+
+### Under Hierarchy
+
+Load of a public external object area allows the object to be associated with a hierarchy. If the public and sensitive portions of the object are loaded, hierarchy is required to be TPM_RH_NULL.
+
+RSA key to null hierarchy:
+```
+$ openssl genrsa -out rsa_private.pem 2048
+$ tpm2_loadexternal -C n -G rsa -r rsa_private.pem -c rsakey_imported.ctx
+```
+
+EC key to null hierarchy:
+```
+$ openssl ecparam -name prime256v1 -genkey -noout -out ecc_private.pem
+$ tpm2_loadexternal -C n -G ecc -r ecc_private.pem -c eckey_imported.ctx
+```
+
+Just the public component of an RSA key to storage hierarchy:
+```
+$ openssl genrsa -out rsa_private.pem 2048
+$ openssl rsa -in rsa_private.pem -out rsa_public.pem -pubout
+$ tpm2_loadexternal -C o -G rsa -u rsa_public.pem -c rsakey_imported.ctx
 ```
 
 ## EK Credential 
