@@ -854,6 +854,23 @@ Enables binding a policy to the authorization value of the authorized TPM object
 
 Check policy command code `man tpm2_policycommandcode` for list of supported commands.
 
+Restrict a key for signing use only:
+```
+$ tpm2_startauthsession -S session.dat
+$ tpm2_policycommandcode -S session.dat TPM2_CC_Sign -L policy-sign.dat
+$ tpm2_flushcontext session.dat
+
+$ tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv -L policy-sign.dat -a "fixedtpm|fixedparent|sensitivedataorigin|decrypt|sign"
+$ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsakey.ctx
+
+$ echo "plaintext" > plain.txt
+
+$ tpm2_startauthsession --policy-session -S session.dat
+$ tpm2_policycommandcode -S session.dat TPM2_CC_Sign
+$ tpm2_sign -c rsakey.ctx -o sign.out plain.txt -p session:session.dat
+$ tpm2_flushcontext session.dat
+```
+
 ### tpm2_policycountertimer
 
 Enables policy authorization by evaluating the comparison operation on the TPMS_CLOCK_INFO: clock, reset count, restart count, and TPM clock safe flag.
@@ -897,6 +914,27 @@ Create a policy that includes specific PCR values.
 ### tpm2_policyrestart
 
 This is not a policy. This command is used for restarting an existing session with the TPM by clearing the policy digest to its initial state.
+
+Instead of repeating the following scope:
+```
+$ tpm2_startauthsession --policy-session -S session.dat
+$ tpm2_policy...
+$ tpm2_...
+$ tpm2_flushcontext session.dat
+```
+You may restart the existing session:
+```
+$ tpm2_startauthsession --policy-session -S session.dat
+$ tpm2_policy...
+$ tpm2_...
+$ tpm2_policyrestart -S session.dat
+$ tpm2_policy...
+$ tpm2_...
+$ tpm2_policyrestart -S session.dat
+$ tpm2_policy...
+$ tpm2_...
+$ tpm2_flushcontext session.dat
+```
 
 ### tpm2_policysecret
 
