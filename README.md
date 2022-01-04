@@ -591,6 +591,13 @@ $ echo "some secret" > secret.clear
 $ tpm2_rsaencrypt -c rsakey.ctx -o secret.cipher secret.clear
 $ tpm2_rsadecrypt -c rsakey.ctx -o secret.decipher secret.cipher
 $ diff secret.decipher secret.clear
+
+# or use OpenSSL to encrypt message
+
+$ tpm2_readpublic -c rsakey.ctx -o public.pem -f pem
+$ openssl rsautl -encrypt -inkey public.pem -in secret.clear -pubin -out secret.cipher
+$ tpm2_rsadecrypt -c rsakey.ctx -o secret.decipher secret.cipher
+$ diff secret.decipher secret.clear
 ```
 
 ## Signing & Verification
@@ -600,6 +607,27 @@ Using RSA key:
 $ echo "some message" > message
 $ tpm2_sign -c rsakey.ctx -g sha256 -o signature message
 $ tpm2_verifysignature -c rsakey.ctx -g sha256 -m message -s signature
+
+# or use OpenSSL to verify signature
+
+$ echo "some message" > message
+$ tpm2_sign -c rsakey.ctx -g sha256 -f plain -o signature message
+$ tpm2_readpublic -c rsakey.ctx -o public.pem -f pem
+$ openssl dgst -sha256 -verify public.pem -keyform pem -signature signature message
+```
+
+Using ECC key:
+```
+$ echo "some message" > message
+$ tpm2_sign -c eckey.ctx -g sha256 -o signature message
+$ tpm2_verifysignature -c eckey.ctx -g sha256 -m message -s signature
+
+# or use OpenSSL to verify signature
+
+$ echo "some message" > message
+$ tpm2_sign -c eckey.ctx -g sha256 -f plain -o signature message
+$ tpm2_readpublic -c eckey.ctx -o public.pem -f pem
+$ openssl dgst -sha256 -verify public.pem -keyform pem -signature signature message
 ```
 
 Keyed-hash (HMAC):
