@@ -20,6 +20,7 @@ OPTIGA™ TPM 2.0 command reference and code examples.
     - **[TPM Clear](#tpm-clear)**
     - **[Dictionary Attack Protection](#dictionary-attack-protection)**
     - **[Get Random](#get-random)**
+    - **[Seal](#seal)**
     - **[Encryption & Decryption](#encryption--decryption)**
     - **[Signing & Verification](#signing--verification)**
     - **[Hashing](#hashing)**
@@ -581,6 +582,22 @@ Wait for 20 seconds (lockoutRecovery) before you can try again.
 Get 16 bytes of random:
 ```
 $ tpm2_getrandom --hex 16
+```
+
+## Seal
+
+Seal data to a TPM:
+```
+$ echo "some message" > message
+
+# seal
+$ tpm2_create -C primary_sh.ctx -i message -u message.seal.pub -r message.seal.priv
+$ tpm2_load -C primary_sh.ctx -u message.seal.pub -r message.seal.priv -c message.seal.ctx
+
+# unseal
+$ tpm2_unseal -c message.seal.ctx -o message.unseal
+$ diff message message.unseal
+
 ```
 
 ## Encryption & Decryption
