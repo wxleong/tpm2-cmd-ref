@@ -678,10 +678,10 @@ $ tpm2_load -C primary_sh.ctx -u signing.key.pub -r signing.key.priv -c signing.
 
 $ tpm2_startauthsession  --policy-session -S session.ctx
 $ tpm2_policycommandcode -S session.ctx TPM2_CC_Certify
-$ tpm2_certify -C signing.key.ctx -c primary_sh.ctx -p session:session.ctx -g sha256 -o attest.out -s sig.out
+$ tpm2_certify -C signing.key.ctx -c primary_sh.ctx -p session:session.ctx -g sha256 -o attest.out -s signature.out
 $ tpm2_flushcontext session.ctx
 
-$ tpm2_verifysignature -c signing.key.ctx -g sha256 -m attest.out -s sig.out
+$ tpm2_verifysignature -c signing.key.ctx -g sha256 -m attest.out -s signature.out
 ```
 The `attest.out` is:
 - TPM2B_ATTEST ->
@@ -716,26 +716,44 @@ $ tpm2_load -C primary_sh.ctx -u signing.key.pub -r signing.key.priv -c signing.
 
 $ tpm2_startauthsession --policy-session -S session.ctx
 $ tpm2_policycommandcode -S session.ctx TPM2_CC_CertifyCreation
-$ tpm2_certifycreation -C signing.key.ctx -c primary_sh.ctx -S session.ctx -d creation.data.hash -t creation.ticket -g sha256 -o sig.out --attestation attest.out
+$ tpm2_certifycreation -C signing.key.ctx -c primary_sh.ctx -S session.ctx -d creation.data.hash -t creation.ticket -g sha256 -o signature.out --attestation attest.out
 $ tpm2_flushcontext session.ctx
 
-$ tpm2_verifysignature -c signing.key.ctx -g sha256 -m attest.out -s sig.out
+$ tpm2_verifysignature -c signing.key.ctx -g sha256 -m attest.out -s signature.out
 ```-->
 ```
 $ tpm2_createprimary -C o -g sha256 -G ecc --creation-data creation.data -d creation.data.hash -t creation.ticket -c primary_sh.ctx
 $ tpm2_create -C primary_sh.ctx -g sha256 -G ecc -u signing.key.pub -r signing.key.priv
 $ tpm2_load -C primary_sh.ctx -u signing.key.pub -r signing.key.priv -c signing.key.ctx
 
-$ tpm2_certifycreation -C signing.key.ctx -c primary_sh.ctx -d creation.data.hash -t creation.ticket -g sha256 -o sig.out --attestation attest.out
+$ tpm2_certifycreation -C signing.key.ctx -c primary_sh.ctx -d creation.data.hash -t creation.ticket -g sha256 -o signature.out --attestation attest.out
 
-$ tpm2_verifysignature -c signing.key.ctx -g sha256 -m attest.out -s sig.out
+$ tpm2_verifysignature -c signing.key.ctx -g sha256 -m attest.out -s signature.out
 ```
 
-<!-- This is not implemented
 <ins><b>tpm2_nvcertify</b></ins>
 
-Provides attestation of the contents of an NV index:
+Provides attestation of the contents of an NV index. An example:
 
+```
+$ dd bs=1 count=32 </dev/urandom >data
+$ tpm2_nvdefine 0x01000000 -s 32 -a "authread|authwrite"
+$ tpm2_nvwrite 0x01000000 -i data
+
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
+$ tpm2_create -C primary_sh.ctx -g sha256 -G ecc -u signing.key.pub -r signing.key.priv -p key123
+$ tpm2_load -C primary_sh.ctx -u signing.key.pub -r signing.key.priv -c signing.key.ctx
+
+$ tpm2_nvcertify -C signing.key.ctx -P key123 -g sha256 -o signature.out --attestation attest.out --size 32 0x01000000
+$ tpm2_verifysignature -c signing.key.ctx -g sha256 -m attest.out -s signature.out
+
+# or use OpenSSL to verify signature
+$ tpm2_nvcertify -C signing.key.ctx -P key123 -g sha256 -f plain -o signature.out --attestation attest.out --size 32 0x01000000
+$ tpm2_readpublic -c signing.key.ctx -o public.pem -f pem
+$ openssl dgst -sha256 -verify public.pem -keyform pem -signature signature.out attest.out
+```
+
+Another example involving policy:
 ```
 # Create a policy to restrict the usage of a signing key to only command TPM2_CC_CertifyCreation
 $ tpm2_startauthsession -S session.ctx
@@ -743,17 +761,19 @@ $ tpm2_policycommandcode -S session.ctx -L policy.ctx TPM2_CC_NV_Certify
 $ tpm2_flushcontext session.ctx
 
 $ dd bs=1 count=32 </dev/urandom >data
-$ tpm2_nvdefine 0x01000000 -C o -s 32 -a "ownerwrite|ownerread"
-$ tpm2_nvwrite 0x01000000 -C o -i data
+$ tpm2_nvdefine 0x01000000 -s 32 -a "authread|authwrite"
+$ tpm2_nvwrite 0x01000000 -i data
 
-$ tpm2_createprimary -C o -g sha256 -G ecc --creation-data creation.data -d creation.data.hash -t creation.ticket -c primary_sh.ctx
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
 $ tpm2_create -C primary_sh.ctx -g sha256 -G ecc -u signing.key.pub -r signing.key.priv -L policy.ctx -a "fixedtpm|fixedparent|sensitivedataorigin|adminwithpolicy|decrypt|sign"
 $ tpm2_load -C primary_sh.ctx -u signing.key.pub -r signing.key.priv -c signing.key.ctx
 
-$ tpm2_nvcertify -C signing.key.ctx -g sha256 -o sig.out --attestation attest.out --size 32 0x01000000
-$ tpm2_verifysignature -c signing.key.ctx -g sha256 -m attest.out -s sig.out
+$ tpm2_startauthsession --policy-session -S session.ctx
+$ tpm2_policycommandcode -S session.ctx TPM2_CC_NV_Certify
+$ tpm2_nvcertify -C signing.key.ctx -P session:session.ctx -g sha256 -o signature.out --attestation attest.out --size 32 0x01000000
+$ tpm2_verifysignature -c signing.key.ctx -g sha256 -m attest.out -s signature.out
+$ tpm2_flushcontext session.ctx
 ```
--->
 
 ## NV Storage
 
@@ -764,6 +784,11 @@ $ tpm2_nvdefine 0x01000000 -C o -s 32 -a "ownerwrite|ownerread"
 $ tpm2_nvwrite 0x01000000 -C o -i data
 $ tpm2_nvread 0x01000000 -C o -o out
 $ diff data out
+```
+
+NV read public:
+```
+$ tpm2_nvreadpublic 0x1000000
 ```
 
 Read NV index:
@@ -861,10 +886,10 @@ $ tpm2_load -C primary_eh.ctx -u signing.key.pub -r signing.key.priv -c signing.
 
 $ tpm2_startauthsession -S session.ctx --audit-session
 $ tpm2_getrandom 1 --hex -S session.ctx
-$ tpm2_getsessionauditdigest -c signing.key.ctx -g sha256 -m attest.out -s sig.out -S session.ctx
+$ tpm2_getsessionauditdigest -c signing.key.ctx -g sha256 -m attest.out -s signature.out -S session.ctx
 $ tpm2_flushcontext session.ctx
 
-$ tpm2_verifysignature -c signing.key.ctx -g sha256 -m attest.out -s sig.out
+$ tpm2_verifysignature -c signing.key.ctx -g sha256 -m attest.out -s signature.out
 ```
 
 <!-- command not supported
@@ -878,7 +903,7 @@ Add or remove TPM2 commands to the audited commands list.
 
 Retrieve the command audit attestation data from the TPM. The attestation data includes the audit digest of the commands in the setlist setup using the command `tpm2_setcommandauditstatus`. Also the attestation data includes the digest of the list of commands setup for audit. The audit digest algorith is setup in the `tpm2_setcommandauditstatus`.
        
-tpm2_getcommandauditdigest -c signing.key.ctx -g sha256 -m attest.out -s sig.out
+tpm2_getcommandauditdigest -c signing.key.ctx -g sha256 -m attest.out -s signature.out
 -->
 
 ## Policy
