@@ -881,7 +881,7 @@ $ tpm2_startauthsession -S session.ctx
 $ tpm2_policyauthorize -S session.ctx -L authorize.policy -n authority_key.name
 $ tpm2_flushcontext session.ctx
 
-# create an ordinary policy
+# create a policy to restrict a key to signing use only
 $ tpm2_startauthsession -S session.ctx
 $ tpm2_policycommandcode -S session.ctx TPM2_CC_Sign -L sign.policy
 $ tpm2_flushcontext session.ctx
@@ -904,10 +904,12 @@ $ tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx
 $ tpm2_verifysignature -c rsakey.ctx -g sha256 -m plain.txt -s signature
 $ tpm2_flushcontext session.ctx
 
-# create a new policy and signed by the authority 
+# create a new policy to restrict a key to decryption use only
 $ tpm2_startauthsession -S session.ctx
 $ tpm2_policycommandcode -S session.ctx TPM2_CC_RSA_Decrypt -L decrypt.policy
 $ tpm2_flushcontext session.ctx
+
+# authority sign the new policy
 $ openssl dgst -sha256 -sign authority_sk.pem -out decrypt_policy.signature decrypt.policy
 
 # encrypt some data
