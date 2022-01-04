@@ -842,6 +842,61 @@ tpm2_getcommandauditdigest -c signing.key.ctx -g sha256 -m attest.out -s sig.out
 
 Allows for mutable policies by tethering to a signing authority.
 
+```
+# create a signing authority
+$ openssl genrsa -out authority_sk.pem 2048
+$ openssl rsa -in authority_sk.pem -out authority_pk.pem -pubout
+$ tpm2_loadexternal -C o -G rsa -u authority_pk.pem -c authority_key.ctx -n authority_key.name
+
+# create an authorize policy
+$ tpm2_startauthsession -S session.ctx
+$ tpm2_policyauthorize -S session.ctx -L authorize.policy -n authority_key.name
+$ tpm2_flushcontext session.ctx
+
+# create an ordinary policy
+$ tpm2_startauthsession -S session.ctx
+$ tpm2_policycommandcode -S session.ctx TPM2_CC_Sign -L sign.policy
+$ tpm2_flushcontext session.ctx
+
+# authority sign the policy
+$ openssl dgst -sha256 -sign authority_sk.pem -out sign_policy.signature sign.policy
+
+# create a key safeguarded by the authorize policy
+$ tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv -L authorize.policy -a "fixedtpm|fixedparent|sensitivedataorigin|decrypt|sign"
+$ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsakey.ctx
+
+$ echo "plaintext" > plain.txt
+
+# use the policy to access the key and perform signing
+$ tpm2_startauthsession --policy-session -S session.ctx
+$ tpm2_policycommandcode -S session.ctx TPM2_CC_Sign
+$ tpm2_verifysignature -c authority_key.ctx -g sha256 -m sign.policy -s sign_policy.signature -t sign_policy.ticket -f rsassa
+$ tpm2_policyauthorize -S session.ctx -L authorize.policy -i sign.policy -n authority_key.name -t sign_policy.ticket
+$ tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx
+$ tpm2_verifysignature -c rsakey.ctx -g sha256 -m plain.txt -s signature
+$ tpm2_flushcontext session.ctx
+
+# create a new policy and signed by the authority 
+$ tpm2_startauthsession -S session.ctx
+$ tpm2_policycommandcode -S session.ctx TPM2_CC_RSA_Decrypt -L decrypt.policy
+$ tpm2_flushcontext session.ctx
+$ openssl dgst -sha256 -sign authority_sk.pem -out decrypt_policy.signature decrypt.policy
+
+# encrypt some data
+$ echo "some secret" > secret.clear
+$ tpm2_rsaencrypt -c rsakey.ctx -o secret.cipher secret.clear
+
+# use the new policy to access the key and perform decryption
+$ tpm2_startauthsession --policy-session -S session.ctx
+$ tpm2_policycommandcode -S session.ctx TPM2_CC_RSA_Decrypt
+$ tpm2_verifysignature -c authority_key.ctx -g sha256 -m decrypt.policy -s decrypt_policy.signature -t decrypt_policy.ticket -f rsassa
+$ tpm2_policyauthorize -S session.ctx -L authorize.policy -i decrypt.policy -n authority_key.name -t decrypt_policy.ticket
+$ tpm2_rsadecrypt -c rsakey.ctx -o secret.decipher secret.cipher -p session:session.ctx
+$ diff secret.decipher secret.clear
+$ tpm2_flushcontext session.ctx
+
+```
+
 ### tpm2_policyauthorizenv
 
 Allows for mutable policies by referencing to a policy from an NV index. In other words, an object policy is stored in NV and it can be changed any time, hence mutable policy.
@@ -856,19 +911,23 @@ Check policy command code `man tpm2_policycommandcode` for list of supported com
 
 Restrict a key for signing use only:
 ```
-$ tpm2_startauthsession -S session.dat
-$ tpm2_policycommandcode -S session.dat TPM2_CC_Sign -L policy-sign.dat
-$ tpm2_flushcontext session.dat
+# create the policy
+$ tpm2_startauthsession -S session.ctx
+$ tpm2_policycommandcode -S session.ctx TPM2_CC_Sign -L sign.policy
+$ tpm2_flushcontext session.ctx
 
-$ tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv -L policy-sign.dat -a "fixedtpm|fixedparent|sensitivedataorigin|decrypt|sign"
+# create a key safeguarded by the policy
+$ tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv -L sign.policy -a "fixedtpm|fixedparent|sensitivedataorigin|decrypt|sign"
 $ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsakey.ctx
 
 $ echo "plaintext" > plain.txt
 
-$ tpm2_startauthsession --policy-session -S session.dat
-$ tpm2_policycommandcode -S session.dat TPM2_CC_Sign
-$ tpm2_sign -c rsakey.ctx -o sign.out plain.txt -p session:session.dat
-$ tpm2_flushcontext session.dat
+# perform signing
+$ tpm2_startauthsession --policy-session -S session.ctx
+$ tpm2_policycommandcode -S session.ctx TPM2_CC_Sign
+$ tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx
+$ tpm2_verifysignature -c rsakey.ctx -g sha256 -m plain.txt -s signature
+$ tpm2_flushcontext session.ctx
 ```
 
 ### tpm2_policycountertimer
@@ -917,23 +976,23 @@ This is not a policy. This command is used for restarting an existing session wi
 
 Instead of repeating the following scope:
 ```
-$ tpm2_startauthsession --policy-session -S session.dat
+$ tpm2_startauthsession --policy-session -S session.ctx
 $ tpm2_policy...
 $ tpm2_...
-$ tpm2_flushcontext session.dat
+$ tpm2_flushcontext session.ctx
 ```
 You may restart the existing session:
 ```
-$ tpm2_startauthsession --policy-session -S session.dat
+$ tpm2_startauthsession --policy-session -S session.ctx
 $ tpm2_policy...
 $ tpm2_...
-$ tpm2_policyrestart -S session.dat
+$ tpm2_policyrestart -S session.ctx
 $ tpm2_policy...
 $ tpm2_...
-$ tpm2_policyrestart -S session.dat
+$ tpm2_policyrestart -S session.ctx
 $ tpm2_policy...
 $ tpm2_...
-$ tpm2_flushcontext session.dat
+$ tpm2_flushcontext session.ctx
 ```
 
 ### tpm2_policysecret
