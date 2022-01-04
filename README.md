@@ -936,7 +936,7 @@ tpm2_getcommandauditdigest -c signing.key.ctx -g sha256 -m attest.out -s signatu
 
 ### tpm2_policyauthorize
 
-Allows for mutable policies by tethering to a signing authority.
+Allows for mutable policies by tethering to a signing authority. In this approach, authority can add new policy but unable to revoke old policy.
 
 ```
 # create a signing authority
@@ -963,7 +963,7 @@ $ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsa
 
 $ echo "plaintext" > plain.txt
 
-# use the policy to access the key and perform signing
+# satisfy the policy to access the key for signing use
 $ tpm2_startauthsession --policy-session -S session.ctx
 $ tpm2_policycommandcode -S session.ctx TPM2_CC_Sign
 $ tpm2_verifysignature -c authority_key.ctx -g sha256 -m sign.policy -s sign_policy.signature -t sign_policy.ticket -f rsassa
@@ -984,7 +984,7 @@ $ openssl dgst -sha256 -sign authority_sk.pem -out decrypt_policy.signature decr
 $ echo "some secret" > secret.clear
 $ tpm2_rsaencrypt -c rsakey.ctx -o secret.cipher secret.clear
 
-# use the new policy to access the key and perform decryption
+# satisfy the new policy to access the key for decryption use
 $ tpm2_startauthsession --policy-session -S session.ctx
 $ tpm2_policycommandcode -S session.ctx TPM2_CC_RSA_Decrypt
 $ tpm2_verifysignature -c authority_key.ctx -g sha256 -m decrypt.policy -s decrypt_policy.signature -t decrypt_policy.ticket -f rsassa
@@ -997,7 +997,61 @@ $ tpm2_flushcontext session.ctx
 
 ### tpm2_policyauthorizenv
 
-Allows for mutable policies by referencing to a policy from an NV index. In other words, an object policy is stored in NV and it can be changed any time, hence mutable policy.
+Allows for mutable policies by referencing to a policy from an NV index. In other words, an object policy is stored in NV and it can be replaced any time, hence mutable policy.
+
+```
+# create NV to store policy
+tpm2_nvdefine -C o -p pass123 -a "authread|authwrite" -s 34 0x1000000
+
+# create a policy to restrict a key to signing use only
+tpm2_startauthsession -S session.ctx
+tpm2_policycommandcode -S session.ctx TPM2_CC_Sign -L sign.policy
+tpm2_flushcontext session.ctx
+
+# store the policy in NV
+echo "000b" | xxd -p -r | cat - sign.policy > policy.bin
+tpm2_nvwrite -P pass123 0x1000000 -i policy.bin
+
+# create the authorize NV policy
+tpm2_startauthsession -S session.ctx
+tpm2_policyauthorizenv -S session.ctx -C 0x1000000 -P pass123 -L authorizenv.policy 0x1000000
+tpm2_flushcontext session.ctx
+
+# create a key safeguarded by the authorize NV policy
+tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv -L authorizenv.policy -a "fixedtpm|fixedparent|sensitivedataorigin|decrypt|sign"
+tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsakey.ctx
+
+echo "plaintext" > plain.txt
+
+# satisfy the policy to access the key for signing use
+tpm2_startauthsession -S session.ctx --policy-session
+tpm2_policycommandcode -S session.ctx TPM2_CC_Sign
+tpm2_policyauthorizenv -S session.ctx -C 0x1000000 -P pass123 0x1000000
+tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx
+tpm2_verifysignature -c rsakey.ctx -g sha256 -m plain.txt -s signature
+tpm2_flushcontext session.ctx
+
+# create a new policy to restrict a key to decryption use only
+tpm2_startauthsession -S session.ctx
+tpm2_policycommandcode -S session.ctx TPM2_CC_RSA_Decrypt -L decrypt.policy
+tpm2_flushcontext session.ctx
+
+# replace the policy in NV
+echo "000b" | xxd -p -r | cat - decrypt.policy > policy.bin
+tpm2_nvwrite -P pass123 0x1000000 -i policy.bin
+
+# encrypt some data
+echo "some secret" > secret.clear
+tpm2_rsaencrypt -c rsakey.ctx -o secret.cipher secret.clear
+
+# satisfy the new policy to access the key for decryption use
+tpm2_startauthsession -S session.ctx --policy-session
+tpm2_policycommandcode -S session.ctx TPM2_CC_RSA_Decrypt
+tpm2_policyauthorizenv -S session.ctx -C 0x1000000 -P pass123 0x1000000
+tpm2_rsadecrypt -c rsakey.ctx -o secret.decipher secret.cipher -p session:session.ctx
+diff secret.decipher secret.clear
+tpm2_flushcontext session.ctx
+```
 
 ### tpm2_policyauthvalue
 
@@ -1020,7 +1074,7 @@ $ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsa
 
 $ echo "plaintext" > plain.txt
 
-# perform signing
+# satisfy the policy to access the key for signing use
 $ tpm2_startauthsession --policy-session -S session.ctx
 $ tpm2_policycommandcode -S session.ctx TPM2_CC_Sign
 $ tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx
