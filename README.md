@@ -395,6 +395,13 @@ $ tpm2_load -C primary_sh.ctx -u eckey.pub -r eckey.priv -c eckey.ctx
 # HMAC
 $ tpm2_create -C primary_sh.ctx -G hmac -c hmackey.ctx
 ```
+<!--
+
+# AES
+$ tpm2_create -C primary_sh.ctx -G aes256 -u aeskey.pub -r aeskey.priv
+$ tpm2_load -C primary_sh.ctx -u aeskey.pub -r aeskey.priv -c aeskey.ctx
+
+-->
 
 ## Persistent Key
 
@@ -621,6 +628,19 @@ $ openssl rsautl -encrypt -inkey public.pem -in secret.clear -pubin -out secret.
 $ tpm2_rsadecrypt -c rsakey.ctx -o secret.decipher secret.cipher
 $ diff secret.decipher secret.clear
 ```
+
+<!--
+
+Using AES key:
+```
+$ echo "some secret" > secret.clear
+$ tpm2_getrandom 16 > iv
+$ tpm2_encryptdecrypt -c aeskey.ctx -t iv -o secret.cipher secret.clear
+$ tpm2_encryptdecrypt -d -c aeskey.ctx -t iv -o secret.decipher secret.cipher
+$ diff secret.decipher secret.clear
+```
+
+-->
 
 ## Signing & Verification
 
