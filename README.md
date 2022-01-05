@@ -29,7 +29,10 @@ OPTIGA™ TPM 2.0 command reference and code examples.
 	- **[Read EK Certificate](#read-ek-certificate)**
     - **[PCR](#pcr)**
     - **[Audit](#audit)**
-    - **[Policy](#policy)**
+    - **[Password Authorization](#password-authorization)**
+    - **[Session-based Authorization](#session-based-authorization)**
+        - **[HMAC](#hmac)**
+        - **[Policy](#policy)**
     - **[Import Externally Created key](#import-externally-created-key)**
         - **[Under a Parent Key](#under-a-parent-key)**
         - **[Under Hierarchy](#under-hierarchy)**
@@ -932,9 +935,52 @@ Retrieve the command audit attestation data from the TPM. The attestation data i
 tpm2_getcommandauditdigest -c signing.key.ctx -g sha256 -m attest.out -s signature.out
 -->
 
-## Policy
+## Password Authorization
 
-### tpm2_policyauthorize
+A plaintext password value may be used to authorize an action when use of an authValue is allowed. 
+<!--tpm2-tools will treat all password authorization as HMAC session-based authorization.-->
+<!-- https://github.com/remuswu1019/tpm2-tools/commit/a82f766e9bc42df9cfbdb12712de071e4e539c9f -->
+<!-- https://github.com/tpm2-software/tpm2-tools/pull/2719 -->
+
+```
+# create a key safeguarded by the a password
+$ tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv -a "fixedtpm|fixedparent|sensitivedataorigin|userwithauth|decrypt|sign" -p pass123
+$ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsakey.ctx
+
+$ echo "plaintext" > plain.txt
+
+# provide the password to access the key for signing use
+$ tpm2_sign -c rsakey.ctx -o signature plain.txt -p pass123
+$ tpm2_verifysignature -c rsakey.ctx -g sha256 -m plain.txt -s signature
+```
+
+## Session-based Authorization
+
+### HMAC
+
+<!-- When the session is an HMAC session, the HMAC sessionKey is derived from the authValue -->
+
+```
+# create a key safeguarded by the a password
+$ tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv -a "fixedtpm|fixedparent|sensitivedataorigin|userwithauth|decrypt|sign" -p pass123
+$ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsakey.ctx
+
+$ echo "plaintext" > plain.txt
+
+# provide the password to access the key for signing use
+$ tpm2_startauthsession --hmac-session -S session.ctx
+$ tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx+pass123
+$ tpm2_verifysignature -c rsakey.ctx -g sha256 -m plain.txt -s signature
+$ tpm2_flushcontext session.ctx
+```
+
+### Policy
+
+Also known as enhanced authorization.
+
+Enhanced authorization is a TPM capability that allows entity-creators or administrators to require specific tests or actions to be performed before an action can be completed. The specific policy is encapsulated in a value called an authPolicy that is associated with an entity. When an HMAC session is used for authorization, the authValue of the entity is used to determine if the authorization is valid. When a policy session is used for authorization, the authPolicy of the entity is used.
+
+#### tpm2_policyauthorize
 
 Allows for mutable policies by tethering to a signing authority. In this approach, authority can add new policy but unable to revoke old policy.
 
@@ -995,7 +1041,7 @@ $ tpm2_flushcontext session.ctx
 
 ```
 
-### tpm2_policyauthorizenv
+#### tpm2_policyauthorizenv
 
 Allows for mutable policies by referencing to a policy from an NV index. In other words, an object policy is stored in NV and it can be replaced any time, hence mutable policy.
 
@@ -1053,7 +1099,7 @@ $ diff secret.decipher secret.clear
 $ tpm2_flushcontext session.ctx
 ```
 
-### tpm2_policyauthvalue
+#### tpm2_policyauthvalue
 
 Enables binding a policy to the authorization value of the authorized TPM object. Enables a policy that requires the object's authentication passphrase be provided. This is equivalent to authenticating using the object passphrase in plaintext or HMAC, only this enforces it as a policy.
 
@@ -1077,7 +1123,7 @@ $ tpm2_verifysignature -c rsakey.ctx -g sha256 -m plain.txt -s signature
 $ tpm2_flushcontext session.ctx
 ```
 
-### tpm2_policycommandcode
+#### tpm2_policycommandcode
 
 Check policy command code `man tpm2_policycommandcode` for list of supported commands.
 
@@ -1102,47 +1148,47 @@ $ tpm2_verifysignature -c rsakey.ctx -g sha256 -m plain.txt -s signature
 $ tpm2_flushcontext session.ctx
 ```
 
-### tpm2_policycountertimer
+#### tpm2_policycountertimer
 
 Enables policy authorization by evaluating the comparison operation on the TPMS_CLOCK_INFO: clock, reset count, restart count, and TPM clock safe flag.
 
-### tpm2_policycphash
+#### tpm2_policycphash
 
 Couples a policy with command parameters of the command.
 
-### tpm2_policyduplicationselect
+#### tpm2_policyduplicationselect
 
 Restricts duplication to a specific new parent.
 
-### tpm2_policylocality
+#### tpm2_policylocality
 
 Restrict TPM object authorization to specific localities.
 
-### tpm2_policynamehash
+#### tpm2_policynamehash
 
 Couples a policy with names of specific objects.
 
-### tpm2_policynv
+#### tpm2_policynv
 
 Evaluates policy authorization by comparing a specified value against the contents in the specified NV Index.
 
-### tpm2_policynvwritten
+#### tpm2_policynvwritten
 
 Restrict TPM object authorization to the written state (TPMA_NV_WRITTEN attribute) of an NV index.
 
-### tpm2_policyor
+#### tpm2_policyor
 
 Logically OR's two policies together.
 
-### tpm2_policypassword
+#### tpm2_policypassword
 
 Enables binding a policy to the authorization value of the authorized TPM object. Enables a policy that requires the object's authentication passphrase be provided. This is equivalent to authenticating using the object passphrase in plaintext, only this enforces it as a policy.
 
-### tpm2_policypcr
+#### tpm2_policypcr
 
 Create a policy that includes specific PCR values.
 
-### tpm2_policyrestart
+#### tpm2_policyrestart
 
 This is not a policy. This command is used for restarting an existing session with the TPM by clearing the policy digest to its initial state.
 
@@ -1167,19 +1213,19 @@ $ tpm2_...
 $ tpm2_flushcontext session.ctx
 ```
 
-### tpm2_policysecret
+#### tpm2_policysecret
 
 Couples the authorization of an object to that of an existing object.
 
-### tpm2_policysigned
+#### tpm2_policysigned
 
 Enables policy authorization by verifying signature of optional TPM2 parameters (nonceTPM || expiration || cpHashA || policyRef)). The signature is generated by a signing authority.
 
-### tpm2_policytemplate
+#### tpm2_policytemplate
 
 Couples a policy with public template of an object.
 
-### tpm2_policyticket
+#### tpm2_policyticket
 
 Enables policy authorization by verifying a ticket that represents a validated authorization that had an expiration time associated with it.
 
