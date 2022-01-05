@@ -937,8 +937,7 @@ tpm2_getcommandauditdigest -c signing.key.ctx -g sha256 -m attest.out -s signatu
 
 ## Password Authorization
 
-A plaintext password value may be used to authorize an action when use of an authValue is allowed. 
-<!--tpm2-tools will treat all password authorization as HMAC session-based authorization.-->
+A plaintext password value may be used to authorize an action when use of an authValue is allowed. Unfortunately, this cannot be demonstrated here. tpm2-tools treats all password authorization as HMAC session-based authorization:
 <!-- https://github.com/remuswu1019/tpm2-tools/commit/a82f766e9bc42df9cfbdb12712de071e4e539c9f -->
 <!-- https://github.com/tpm2-software/tpm2-tools/pull/2719 -->
 
@@ -960,6 +959,7 @@ $ tpm2_verifysignature -c rsakey.ctx -g sha256 -m plain.txt -s signature
 
 <!-- When the session is an HMAC session, the HMAC sessionKey is derived from the authValue -->
 
+Commands below should have the same effect as password authorization due to tpm2-tools implementation. It treats all password authorization as HMAC session-based authorization:
 ```
 # create a key safeguarded by the a password
 $ tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv -a "fixedtpm|fixedparent|sensitivedataorigin|userwithauth|decrypt|sign" -p pass123
