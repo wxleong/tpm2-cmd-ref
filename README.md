@@ -1001,61 +1001,81 @@ Allows for mutable policies by referencing to a policy from an NV index. In othe
 
 ```
 # create NV to store policy
-tpm2_nvdefine -C o -p pass123 -a "authread|authwrite" -s 34 0x1000000
+$ tpm2_nvdefine -C o -p pass123 -a "authread|authwrite" -s 34 0x1000000
 
 # create a policy to restrict a key to signing use only
-tpm2_startauthsession -S session.ctx
-tpm2_policycommandcode -S session.ctx TPM2_CC_Sign -L sign.policy
-tpm2_flushcontext session.ctx
+$ tpm2_startauthsession -S session.ctx
+$ tpm2_policycommandcode -S session.ctx TPM2_CC_Sign -L sign.policy
+$ tpm2_flushcontext session.ctx
 
 # store the policy in NV
-echo "000b" | xxd -p -r | cat - sign.policy > policy.bin
-tpm2_nvwrite -P pass123 0x1000000 -i policy.bin
+$ echo "000b" | xxd -p -r | cat - sign.policy > policy.bin
+$ tpm2_nvwrite -P pass123 0x1000000 -i policy.bin
 
 # create the authorize NV policy
-tpm2_startauthsession -S session.ctx
-tpm2_policyauthorizenv -S session.ctx -C 0x1000000 -P pass123 -L authorizenv.policy 0x1000000
-tpm2_flushcontext session.ctx
+$ tpm2_startauthsession -S session.ctx
+$ tpm2_policyauthorizenv -S session.ctx -C 0x1000000 -P pass123 -L authorizenv.policy 0x1000000
+$ tpm2_flushcontext session.ctx
 
 # create a key safeguarded by the authorize NV policy
-tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv -L authorizenv.policy -a "fixedtpm|fixedparent|sensitivedataorigin|decrypt|sign"
-tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsakey.ctx
+$ tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv -L authorizenv.policy -a "fixedtpm|fixedparent|sensitivedataorigin|decrypt|sign"
+$ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsakey.ctx
 
-echo "plaintext" > plain.txt
+$ echo "plaintext" > plain.txt
 
 # satisfy the policy to access the key for signing use
-tpm2_startauthsession -S session.ctx --policy-session
-tpm2_policycommandcode -S session.ctx TPM2_CC_Sign
-tpm2_policyauthorizenv -S session.ctx -C 0x1000000 -P pass123 0x1000000
-tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx
-tpm2_verifysignature -c rsakey.ctx -g sha256 -m plain.txt -s signature
-tpm2_flushcontext session.ctx
+$ tpm2_startauthsession -S session.ctx --policy-session
+$ tpm2_policycommandcode -S session.ctx TPM2_CC_Sign
+$ tpm2_policyauthorizenv -S session.ctx -C 0x1000000 -P pass123 0x1000000
+$ tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx
+$ tpm2_verifysignature -c rsakey.ctx -g sha256 -m plain.txt -s signature
+$ tpm2_flushcontext session.ctx
 
 # create a new policy to restrict a key to decryption use only
-tpm2_startauthsession -S session.ctx
-tpm2_policycommandcode -S session.ctx TPM2_CC_RSA_Decrypt -L decrypt.policy
-tpm2_flushcontext session.ctx
+$ tpm2_startauthsession -S session.ctx
+$ tpm2_policycommandcode -S session.ctx TPM2_CC_RSA_Decrypt -L decrypt.policy
+$ tpm2_flushcontext session.ctx
 
 # replace the policy in NV
-echo "000b" | xxd -p -r | cat - decrypt.policy > policy.bin
-tpm2_nvwrite -P pass123 0x1000000 -i policy.bin
+$ echo "000b" | xxd -p -r | cat - decrypt.policy > policy.bin
+$ tpm2_nvwrite -P pass123 0x1000000 -i policy.bin
 
 # encrypt some data
-echo "some secret" > secret.clear
-tpm2_rsaencrypt -c rsakey.ctx -o secret.cipher secret.clear
+$ echo "some secret" > secret.clear
+$ tpm2_rsaencrypt -c rsakey.ctx -o secret.cipher secret.clear
 
 # satisfy the new policy to access the key for decryption use
-tpm2_startauthsession -S session.ctx --policy-session
-tpm2_policycommandcode -S session.ctx TPM2_CC_RSA_Decrypt
-tpm2_policyauthorizenv -S session.ctx -C 0x1000000 -P pass123 0x1000000
-tpm2_rsadecrypt -c rsakey.ctx -o secret.decipher secret.cipher -p session:session.ctx
-diff secret.decipher secret.clear
-tpm2_flushcontext session.ctx
+$ tpm2_startauthsession -S session.ctx --policy-session
+$ tpm2_policycommandcode -S session.ctx TPM2_CC_RSA_Decrypt
+$ tpm2_policyauthorizenv -S session.ctx -C 0x1000000 -P pass123 0x1000000
+$ tpm2_rsadecrypt -c rsakey.ctx -o secret.decipher secret.cipher -p session:session.ctx
+$ diff secret.decipher secret.clear
+$ tpm2_flushcontext session.ctx
 ```
 
 ### tpm2_policyauthvalue
 
-Enables binding a policy to the authorization value of the authorized TPM object. Enables a policy that requires the object's authentication passphrase be provided. This is equivalent to authenticating using the object passphrase in plaintext !!or HMAC!!, only this enforces it as a policy.
+Enables binding a policy to the authorization value of the authorized TPM object. Enables a policy that requires the object's authentication passphrase be provided. This is equivalent to authenticating using the object passphrase in plaintext or HMAC, only this enforces it as a policy.
+
+```
+# create a policy
+$ tpm2_startauthsession -S session.ctx
+$ tpm2_policyauthvalue -S session.ctx -L authvalue.policy
+$ tpm2_flushcontext session.ctx
+
+# create a key safeguarded by the policy
+$ tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv -L authvalue.policy -a "fixedtpm|fixedparent|sensitivedataorigin|decrypt|sign" -p pass123
+$ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsakey.ctx
+
+$ echo "plaintext" > plain.txt
+
+# satisfy the policy to access the key for signing use
+$ tpm2_startauthsession -S session.ctx --policy-session
+$ tpm2_policyauthvalue -S session.ctx
+$ tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx+pass123
+$ tpm2_verifysignature -c rsakey.ctx -g sha256 -m plain.txt -s signature
+$ tpm2_flushcontext session.ctx
+```
 
 ### tpm2_policycommandcode
 
