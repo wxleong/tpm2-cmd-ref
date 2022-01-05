@@ -874,7 +874,7 @@ $ tpm2_getekcertificate -o rsa_ek.crt.der -o ecc_ek.crt.der
 
 ## PCR
 
-PCR bank allocation. In other words, enable/disable PCR banks:
+PCR bank allocation. In other words, enable/disable PCR banks. Power cycle the TPM after executing the following command to see the effects:
 ```
 # enable only sha256 bank
 $ tpm2_pcrallocate sha1:none+sha256:all+sha384:none
