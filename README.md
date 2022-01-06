@@ -897,30 +897,64 @@ $ tpm2_getekcertificate -o rsa_ek.crt.der -o ecc_ek.crt.der
 
 <ins><b>tpm2_readclock</b></ins>
 
-The command reads the current TPMS_TIME_INFO structure that contains the current setting of Time, Clock, resetCount, and restartCount:
-    - Reset count: This counter shall increment on each TPM Reset. This counter shall be reset to zero by TPM2_Clear(). A TPM Reset is either an unorderly shutdown or an orderly shutdown:
-        ```
-        $ tpm2_shutdown -c
-        < cold/warm reset >
-        $ tpm2_startup -c
-        $ tpm2_readclock
-        ```
-    - Restart count: This counter shall increment by one for each TPM Restart or TPM Resume. The restartCount shall be reset to zero on a TPM Reset or TPM2_Clear(). A TPM Restart is:
-        ```
-        $ tpm2_shutdown
-        < cold/warm reset >
-        $ tpm2_startup -c
-        $ tpm2_readclock
-        ```
-        A TPM Resume is:
-        ```
-        $ tpm2_shutdown
-        < cold/warm reset >
-        $ tpm2_startup
-        $ tpm2_readclock
-        ```
-    - Clock: It is a time value in milliseconds that advances while the TPM is powered. The value shall be reset to zero by TPM2_Clear(). This value may be advanced by TPM2_ClockSet().
-    - Time: It is a time value in milliseconds that advances while the TPM is powered. The value is reset whenever power to the time circuit is reestablished (in other words a cold reset).
+```
+$ tpm2_readclock
+  time: 12286
+  clock_info:
+    clock: 12286
+    reset_count: 0
+    restart_count: 0
+    safe: yes
+```
+
+The command reads the current TPMS_TIME_INFO structure that contains the current setting of Time, Clock, Safe, resetCount, and restartCount:
+- Reset count: This counter shall increment on each TPM Reset. This counter shall be reset to zero by TPM2_Clear(). A TPM Reset is either an unorderly shutdown or an orderly shutdown:
+    ```
+    $ tpm2_shutdown -c
+    < cold/warm reset >
+    $ tpm2_startup -c
+    $ tpm2_readclock
+    ```
+- Restart count: This counter shall increment by one for each TPM Restart or TPM Resume. The restartCount shall be reset to zero on a TPM Reset or TPM2_Clear(). A TPM Restart is:
+    ```
+    $ tpm2_shutdown
+    < cold/warm reset >
+    $ tpm2_startup -c
+    $ tpm2_readclock
+    ```
+    A TPM Resume is:
+    ```
+    $ tpm2_shutdown
+    < cold/warm reset >
+    $ tpm2_startup
+    $ tpm2_readclock
+    ```
+- Clock: It is a time value in milliseconds that advances while the TPM is powered. The value shall be reset to zero by TPM2_Clear(). This value may be advanced by TPM2_ClockSet().
+
+    Clock will be non-volatile but may have a volatile component that is updated every millisecond with the non-volatile component updated at a lower rate. The non-volatile component shall be updated no less frequently than every 222 milliseconds (~69.9 minutes). The update rate of the non-volatile portion of Clock shall be reported by command `tpm2_getcap properties-fixed` check property TPM_PT_CLOCK_UPDATE:
+    ```
+    $ tpm2_getcap properties-fixed
+      ...
+      TPM2_PT_CLOCK_UPDATE:
+      raw: 0x40000 --> 262144ms -> 262s --> 4.4m
+      ...
+    ```
+- Safe: This parameter is set to YES when the value reported in Clock is guaranteed to be greater than any previous value. This parameter will be set to YES by TPM2_Clear(). An unorderly shutdown will put the parameter to NO. After an unorderly shutdown, the parameter will return to YES when ((Clock % TPM2_PT_CLOCK_UPDATE) == 0).
+- Time: It is a time value in milliseconds that advances while the TPM is powered. The value is reset whenever power to the time circuit is reestablished (in other words a cold reset).
+
+<ins><b>tpm2_setclock</b></ins>
+
+Sets the clock on the TPM to a time (milliseconds) in the future:
+```
+$ tpm2_readclock
+  time: 5097
+  clock_info:
+    clock: 5097
+    reset_count: 0
+    restart_count: 0
+    safe: yes
+$ tpm2_setclock 10000
+```
 
 ## PCR
 
