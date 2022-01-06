@@ -27,6 +27,7 @@ OPTIGA™ TPM 2.0 command reference and code examples.
     - **[Certify](#certify)**
     - **[NV Storage](#nv-storage)**
 	- **[Read EK Certificate](#read-ek-certificate)**
+    - **[Clock & Time](#clock--time)**
     - **[PCR](#pcr)**
     - **[Audit](#audit)**
     - **[Password Authorization](#password-authorization)**
@@ -234,9 +235,29 @@ Type of startup and shutdown operations:
 
 3 methods of preparing a TPM for operation:
 
-1. TPM reset: Startup(TPM_SU_CLEAR) that follows a Shutdown(TPM_SU_CLEAR), or Startup(TPM_SU_CLEAR) for which there was no preceding Shutdown() (a disorderly shutdown). A TPM reset is roughly analogous to a **reboot** of a platform.
-2. TPM restart: Startup(TPM_SU_CLEAR) that follows a Shutdown(TPM_SU_STATE). This indicates a system that is restoring the OS from non-volatile storage, sometimes called **"hibernation"**. For a TPM restart, the TPM restores values saved by the preceding Shutdown(TPM_SU_STATE) except that all the PCR are set to their default initial state.
-3. TPM resume: Startup(TPM_SU_STATE) that follows a Shutdown(TPM_SU_STATE). This indicates a system that is restarting the OS from RAM memory, sometimes called **"sleep"**. TPM Resume restores all of the state that was saved by Shutdown(STATE), including those PCR that are designated as being preserved by Startup(STATE). PCR not designated as being preserved, are reset to their default initial state.
+1. TPM Reset: Startup(TPM_SU_CLEAR) that follows a Shutdown(TPM_SU_CLEAR), or Startup(TPM_SU_CLEAR) for which there was no preceding Shutdown() (a disorderly shutdown). A TPM reset is roughly analogous to a **reboot** of a platform.
+    ```
+    $ tpm2_shutdown -c
+    < cold/warm reset >
+    $ tpm2_startup -c
+    ```
+2. TPM Restart: Startup(TPM_SU_CLEAR) that follows a Shutdown(TPM_SU_STATE). This indicates a system that is restoring the OS from non-volatile storage, sometimes called **"hibernation"**. For a TPM restart, the TPM restores values saved by the preceding Shutdown(TPM_SU_STATE) except that all the PCR are set to their default initial state.
+    ```
+    $ tpm2_shutdown
+    < cold/warm reset >
+    $ tpm2_startup -c
+    ```
+3. TPM Resume: Startup(TPM_SU_STATE) that follows a Shutdown(TPM_SU_STATE). This indicates a system that is restarting the OS from RAM memory, sometimes called **"sleep"**. TPM Resume restores all of the state that was saved by Shutdown(STATE), including those PCR that are designated as being preserved by Startup(STATE). PCR not designated as being preserved, are reset to their default initial state.
+    ```
+    $ tpm2_shutdown
+    < cold/warm reset >
+    $ tpm2_startup
+    ```
+
+*Remarks:*
+- *Cold reset means power on reset*
+- *Warm reset means using the TPM RST signal (reset pin) to trigger a reset without losing power*
+
 
 ## Display TPM Capabilities
 
@@ -872,9 +893,38 @@ Read RSA & ECC endorsement key certificates using tpm2-tools:
 $ tpm2_getekcertificate -o rsa_ek.crt.der -o ecc_ek.crt.der
 ```
 
+# Clock & Time
+
+<ins><b>tpm2_readclock</b></ins>
+
+The command reads the current TPMS_TIME_INFO structure that contains the current setting of Time, Clock, resetCount, and restartCount:
+    - Reset count: This counter shall increment on each TPM Reset. This counter shall be reset to zero by TPM2_Clear(). A TPM Reset is either an unorderly shutdown or an orderly shutdown:
+        ```
+        $ tpm2_shutdown -c
+        < cold/warm reset >
+        $ tpm2_startup -c
+        $ tpm2_readclock
+        ```
+    - Restart count: This counter shall increment by one for each TPM Restart or TPM Resume. The restartCount shall be reset to zero on a TPM Reset or TPM2_Clear(). A TPM Restart is:
+        ```
+        $ tpm2_shutdown
+        < cold/warm reset >
+        $ tpm2_startup -c
+        $ tpm2_readclock
+        ```
+        A TPM Resume is:
+        ```
+        $ tpm2_shutdown
+        < cold/warm reset >
+        $ tpm2_startup
+        $ tpm2_readclock
+        ```
+    - Clock: It is a time value in milliseconds that advances while the TPM is powered. The value shall be reset to zero by TPM2_Clear(). This value may be advanced by TPM2_ClockSet().
+    - Time: It is a time value in milliseconds that advances while the TPM is powered. The value is reset whenever power to the time circuit is reestablished (in other words a cold reset).
+
 ## PCR
 
-PCR bank allocation. In other words, enable/disable PCR banks. Power cycle the TPM after executing the following command to see the effects:
+PCR bank allocation. In other words, enable/disable PCR banks. Cold/Warm reset the TPM after executing the following command to see the effects:
 ```
 # enable only sha256 bank
 $ tpm2_pcrallocate sha1:none+sha256:all+sha384:none
@@ -982,7 +1032,7 @@ Enhanced authorization is a TPM capability that allows entity-creators or admini
 
 #### tpm2_policyauthorize
 
-Allows for mutable policies by tethering to a signing authority. In this approach, authority can add new policy but unable to revoke old policy.
+Allows for mutable policies by tethering to a signing authority. In this approach, authority can add new policy but unable to revoke old policy:
 
 ```
 # create a signing authority
@@ -1043,7 +1093,7 @@ $ tpm2_flushcontext session.ctx
 
 #### tpm2_policyauthorizenv
 
-Allows for mutable policies by referencing to a policy from an NV index. In other words, an object policy is stored in NV and it can be replaced any time, hence mutable policy.
+Allows for mutable policies by referencing to a policy from an NV index. In other words, an object policy is stored in NV and it can be replaced any time, hence mutable policy:
 
 ```
 # create NV to store policy
@@ -1101,7 +1151,7 @@ $ tpm2_flushcontext session.ctx
 
 #### tpm2_policyauthvalue
 
-Enables binding a policy to the authorization value of the authorized TPM object. Enables a policy that requires the object's authentication passphrase be provided. This is equivalent to authenticating using the object passphrase in plaintext or HMAC, only this enforces it as a policy.
+Enables binding a policy to the authorization value of the authorized TPM object. Enables a policy that requires the object's authentication passphrase be provided. This is equivalent to authenticating using the object passphrase in plaintext or HMAC, only this enforces it as a policy:
 
 ```
 # create a policy
@@ -1150,7 +1200,10 @@ $ tpm2_flushcontext session.ctx
 
 #### tpm2_policycountertimer
 
-Enables policy authorization by evaluating the comparison operation on the TPMS_CLOCK_INFO: clock, reset count, restart count, and TPM clock safe flag.
+Enables policy authorization by evaluating the comparison operation on the TPMS_CLOCK_INFO: reset count, restart count, time, clock, and clock safe flag (to indicate unorderly shutdown):
+
+```
+```
 
 #### tpm2_policycphash
 
