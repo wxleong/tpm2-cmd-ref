@@ -1234,9 +1234,41 @@ $ tpm2_flushcontext session.ctx
 
 #### tpm2_policycountertimer
 
-Enables policy authorization by evaluating the comparison operation on the TPMS_CLOCK_INFO: reset count, restart count, time, clock, and clock safe flag (to indicate unorderly shutdown):
+Enables policy authorization by evaluating the comparison operation on the TPMS_CLOCK_INFO: reset count, restart count, time, clock, and clock safe flag.
 
+One of the example is to restrict the usage of a key to only the first 2 minutes of TPM Clock:
 ```
+# create the policy
+$ tpm2_startauthsession -S session.ctx
+$ tpm2_policycountertimer -S session.ctx -L time.policy --ult clock=120000
+$ tpm2_flushcontext session.ctx
+
+# reset TPM clock
+$ tpm2_clear -c p
+
+# create a key safeguarded by the policy
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
+$ tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv -L time.policy -a "fixedtpm|fixedparent|sensitivedataorigin|decrypt|sign"
+$ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsakey.ctx
+
+$ echo "plaintext" > plain.txt
+
+# satisfy the policy to access the key for signing use
+$ tpm2_startauthsession --policy-session -S session.ctx
+$ tpm2_policycountertimer -S session.ctx --ult clock=120000
+$ tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx
+$ tpm2_verifysignature -c rsakey.ctx -g sha256 -m plain.txt -s signature
+$ tpm2_flushcontext session.ctx
+
+# set the clock to future time
+$ tpm2_setclock 120000
+
+# attempt to access the key for signing use
+$ tpm2_startauthsession --policy-session -S session.ctx
+$ tpm2_policycountertimer -S session.ctx --ult clock=120000
+$ tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx <---- expected to fail
+$ tpm2_verifysignature -c rsakey.ctx -g sha256 -m plain.txt -s signature
+$ tpm2_flushcontext session.ctx
 ```
 
 #### tpm2_policycphash
