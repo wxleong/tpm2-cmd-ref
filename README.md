@@ -838,10 +838,10 @@ $ diff data out
 
 NV read public:
 ```
-$ tpm2_nvreadpublic 0x1000000
+$ tpm2_nvreadpublic
 ```
 
-Read NV index:
+Read NV indices:
 ```
 $ tpm2_getcap handles-nv-index
 ```
@@ -871,17 +871,119 @@ $ diff data out
 $ tpm2_nvundefine 0x01000000 -C p
 ```
 
-Define 64-bit NV for OR operation:
+Define a 64-bit NV for OR operation:
 ```
 $ tpm2_nvdefine 0x01000000 -C o -a "nt=bits|ownerwrite|ownerread"
 
 # OR 1's into NV index
 $ tpm2_nvsetbits 0x01000000 -C o -i 0x1111111111111111
-$ tpm2_nvread 0x01000000 -C o -o out
-$ xxd out
+$ tpm2_nvread 0x01000000 -C o | xxd -p
 
 $ tpm2_nvundefine 0x01000000 -C o
 ```
+
+Define a 64-bit NV for counting operation:
+```
+$ tpm2_nvdefine 0x01000000 -C o -a "nt=counter|ownerwrite|ownerread"
+
+# increment
+$ tpm2_nvincrement 0x01000000 -C o
+$ tpm2_nvread 0x01000000 -C o | xxd -p
+
+$ tpm2_nvundefine 0x01000000 -C o
+```
+
+Define a 64-bit NV for extend operation. The name algorithm decides the hash algorithm used for the extend:
+```
+$ tpm2_nvdefine 0x01000000 -C o -g sha256 -a "nt=extend|ownerwrite|ownerread"
+
+# extend
+$ echo "plaintext" > plain.txt
+$ tpm2_nvextend 0x01000000 -C o -i plain.txt
+$ tpm2_nvread 0x01000000 -C o | xxd -c 32 -p
+
+$ tpm2_nvundefine 0x01000000 -C o
+```
+
+Define an NV for pinfail operation:
+<!-- Use `tpm2_nvread 0x01000000 -C o` to read the NV instead of `tpm2_nvread 0x01000000 -C 0x01000000 -P pass123`, because a successful authentication using index authvalue will reset the pinCount -->
+<!-- If TPM_NT is TPM_NT_PIN_FAIL, TPMA_NV_NO_DA must be SET. This removes ambiguity over which Dictionary Attack defense protects a TPM_NV_PIN_FAIL's authValue. -->
+<!-- TPMA_NV_AUTHWRITE must set to CLEAR. For reasoning purpose: imagine if TPMA_NV_AUTHWRITE was SET for a pinpass/pinfail, a user knowing the authorization value could decrease pinCount or increase pinLimit, defeating the purpose of a pinfail/pinfail. -->
+```
+$ tpm2_nvdefine 0x01000000 -C o -a "nt=pinfail|ownerwrite|ownerread|authread|no_da" -p pass123
+
+# set the TPMS_NV_PIN_COUNTER_PARAMETERS structure (pinCount=0|pinLimit=5)
+$ echo -n -e '\x00\x00\x00\x00\x00\x00\x00\x05' > data
+$ tpm2_nvwrite 0x01000000 -C o -i data
+$ tpm2_nvread 0x01000000 -C o | xxd -p
+
+# trigger localized dictionary attack protection
+$ tpm2_nvread 0x01000000 -C 0x01000000 -P pass123 | xxd -p
+$ tpm2_nvread 0x01000000 -C 0x01000000 -P fail123 <---- expected to fail
+$ tpm2_nvread 0x01000000 -C o | xxd -p            <---- notice pinCount increases by 1
+$ tpm2_nvread 0x01000000 -C 0x01000000 -P fail123
+$ tpm2_nvread 0x01000000 -C 0x01000000 -P fail123
+$ tpm2_nvread 0x01000000 -C 0x01000000 -P fail123
+$ tpm2_nvread 0x01000000 -C 0x01000000 -P fail123
+$ tpm2_nvread 0x01000000 -C 0x01000000 -P fail123 <---- authorization via authValue is now locked out 
+
+# exit authValue lockout
+$ tpm2_nvwrite 0x01000000 -C o -i data
+
+$ tpm2_nvundefine 0x01000000 -C o
+```
+
+A more meaningful pinfail example:
+```
+$ tpm2_nvdefine 0x01000000 -C o -a "nt=pinfail|ownerwrite|ownerread|authread|no_da" -p pass123
+
+# set the TPMS_NV_PIN_COUNTER_PARAMETERS structure (pinCount=0|pinLimit=5)
+$ echo -n -e '\x00\x00\x00\x00\x00\x00\x00\x05' > data
+$ tpm2_nvwrite 0x01000000 -C o -i data
+$ tpm2_nvread 0x01000000 -C o | xxd -p
+
+# create a policy to use nv auth for authorization
+$ tpm2_startauthsession -S session.ctx
+$ tpm2_policysecret -S session.ctx -L secret.policy -c 0x01000000 pass123
+$ tpm2_flushcontext session.ctx
+
+# create a key safeguarded by the policy
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
+$ tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv -L secret.policy -a "fixedtpm|fixedparent|sensitivedataorigin|decrypt|sign"
+$ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsakey.ctx
+
+$ echo "plaintext" > plain.txt
+
+# satisfy the policy to access the key for signing use
+$ tpm2_startauthsession --policy-session -S session.ctx
+$ tpm2_policysecret -S session.ctx -c 0x01000000 pass123
+$ tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx
+$ tpm2_verifysignature -c rsakey.ctx -g sha256 -m plain.txt -s signature
+$ tpm2_flushcontext session.ctx
+
+# trigger localized dictionary attack protection
+$ tpm2_startauthsession --policy-session -S session.ctx
+$ tpm2_policysecret -S session.ctx -c 0x01000000 fail123 <---- expected to fail
+$ tpm2_nvread 0x01000000 -C o | xxd -p                   <---- notice pinCount increases by 1
+$ tpm2_policysecret -S session.ctx -c 0x01000000 fail123
+$ tpm2_policysecret -S session.ctx -c 0x01000000 fail123
+$ tpm2_policysecret -S session.ctx -c 0x01000000 fail123
+$ tpm2_policysecret -S session.ctx -c 0x01000000 fail123
+$ tpm2_policysecret -S session.ctx -c 0x01000000 fail123 <---- authorization via authValue is now locked out 
+$ tpm2_flushcontext session.ctx
+
+# exit authValue lockout
+$ tpm2_nvwrite 0x01000000 -C o -i data
+
+$ tpm2_nvundefine 0x01000000 -C o
+```
+
+Define an NV for pinpass operation:
+```
+$ tpm2_nvdefine 0x01000000 -C o -a "nt=pinpass|ownerwrite|ownerread"
+```
+
+//counter, bits, extend, pinfail, pinpass
 
 ## Read EK Certificate
 
@@ -983,14 +1085,14 @@ $ tpm2_pcrread
 
 Compute and show the hash value of a file without extending to PCR:
 ```
-$ echo "foo" > data
-$ tpm2_pcrevent data
+$ echo "plaintext" > plain.txt
+$ tpm2_pcrevent plain.txt
 ```
 
 Extend a file to PCR:
 ```
-$ echo "foo" > data
-$ tpm2_pcrevent 8 data
+$ echo "plaintext" > plain.txt
+$ tpm2_pcrevent 8 plain.txt
 ```
 
 Extend a hash value to PCR:
