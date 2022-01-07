@@ -871,6 +871,18 @@ $ diff data out
 $ tpm2_nvundefine 0x01000000 -C p
 ```
 
+Define 64-bit NV for OR operation:
+```
+$ tpm2_nvdefine 0x01000000 -C o -a "nt=bits|ownerwrite|ownerread"
+
+# OR 1's into NV index
+$ tpm2_nvsetbits 0x01000000 -C o -i 0x1111111111111111
+$ tpm2_nvread 0x01000000 -C o -o out
+$ xxd out
+
+$ tpm2_nvundefine 0x01000000 -C o
+```
+
 ## Read EK Certificate
 
 This section only work on hardware TPM.
@@ -1273,7 +1285,15 @@ $ tpm2_flushcontext session.ctx
 
 #### tpm2_policycphash
 
-Couples a policy with command parameters of the command.
+Couples a policy with command parameters of the command. Dependencies: tpm2_policyauthorize/tpm2_policyauthorizenv.
+
+<!--
+The policy needs tpm2_policyauthorize/tpm2_policyauthorizenv otherwise it turns into a chicken and egg problem. We know from the beginning, a policy has to be created first then it is set to an object. Finally, the policy protected object can be used to perform certain actions (e.g., sign, decrypt, ...). However, to create tpm2_policycphash you will need to generate cpHash and the cpHash recipe requires an object name. And that is exactly the chicken and egg problem, you cant create tpm2_policycphash without creating an object first; on the other hand, you cant create an object without creating a policy first. To break the deadlock, create an object with tpm2_policyauthorize/tpm2_policyauthorizenv. Now tpm2_policycphash can be associated with the object at a later stage.
+-->
+```
+
+```
+
 
 #### tpm2_policyduplicationselect
 
