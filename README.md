@@ -968,22 +968,86 @@ $ tpm2_nvread 0x01000000 -C o | xxd -p                   <---- notice pinCount i
 $ tpm2_policysecret -S session.ctx -c 0x01000000 fail123
 $ tpm2_policysecret -S session.ctx -c 0x01000000 fail123
 $ tpm2_policysecret -S session.ctx -c 0x01000000 fail123
-$ tpm2_policysecret -S session.ctx -c 0x01000000 fail123
-$ tpm2_policysecret -S session.ctx -c 0x01000000 fail123 <---- authorization via authValue is now locked out 
+$ tpm2_policysecret -S session.ctx -c 0x01000000 fail123 <---- notice pinCount == pinLimit
+$ tpm2_policysecret -S session.ctx -c 0x01000000 fail123 <---- authorization using authValue will fail
 $ tpm2_flushcontext session.ctx
 
-# exit authValue lockout
+# re-enable NV authValue
 $ tpm2_nvwrite 0x01000000 -C o -i data
 
 $ tpm2_nvundefine 0x01000000 -C o
 ```
 
 Define an NV for pinpass operation:
+<!-- Use `tpm2_nvread 0x01000000 -C o` to read the NV instead of `tpm2_nvread 0x01000000 -C 0x01000000 -P pass123`, because a successful authentication using index authvalue will increase the pinCount -->
+<!-- TPMA_NV_AUTHWRITE must set to CLEAR. For reasoning purpose: imagine if TPMA_NV_AUTHWRITE was SET for a pinpass/pinfail, a user knowing the authorization value could decrease pinCount or increase pinLimit, defeating the purpose of a pinfail/pinfail. -->
 ```
-$ tpm2_nvdefine 0x01000000 -C o -a "nt=pinpass|ownerwrite|ownerread"
+$ tpm2_nvdefine 0x01000000 -C o -a "nt=pinpass|ownerwrite|ownerread|authread" -p pass123
+
+# set the TPMS_NV_PIN_COUNTER_PARAMETERS structure (pinCount=0|pinLimit=5)
+$ echo -n -e '\x00\x00\x00\x00\x00\x00\x00\x05' > data
+$ tpm2_nvwrite 0x01000000 -C o -i data
+$ tpm2_nvread 0x01000000 -C o | xxd -p
+
+# restricting the number of uses with pinpass
+$ tpm2_nvread 0x01000000 -C 0x01000000 -P pass123 | xxd -p  <---- notice pinCount increases by 1
+$ tpm2_nvread 0x01000000 -C 0x01000000 -P pass123 | xxd -p
+$ tpm2_nvread 0x01000000 -C 0x01000000 -P pass123 | xxd -p
+$ tpm2_nvread 0x01000000 -C 0x01000000 -P pass123 | xxd -p
+$ tpm2_nvread 0x01000000 -C 0x01000000 -P pass123 | xxd -p  <---- notice pinCount == pinLimit
+$ tpm2_nvread 0x01000000 -C 0x01000000 -P pass123 | xxd -p  <---- authorization using authValue will fail 
+
+# re-enable NV authValue
+$ tpm2_nvwrite 0x01000000 -C o -i data
+
+$ tpm2_nvundefine 0x01000000 -C o
 ```
 
-//counter, bits, extend, pinfail, pinpass
+A more meaningful pinpass example:
+```
+$ tpm2_nvdefine 0x01000000 -C o -a "nt=pinpass|ownerwrite|ownerread|authread" -p pass123
+
+# set the TPMS_NV_PIN_COUNTER_PARAMETERS structure (pinCount=0|pinLimit=5)
+$ echo -n -e '\x00\x00\x00\x00\x00\x00\x00\x05' > data
+$ tpm2_nvwrite 0x01000000 -C o -i data
+$ tpm2_nvread 0x01000000 -C o | xxd -p
+
+# create a policy to use nv auth for authorization
+$ tpm2_startauthsession -S session.ctx
+$ tpm2_policysecret -S session.ctx -L secret.policy -c 0x01000000 pass123
+$ tpm2_flushcontext session.ctx
+
+# create a key safeguarded by the policy
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
+$ tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv -L secret.policy -a "fixedtpm|fixedparent|sensitivedataorigin|decrypt|sign"
+$ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsakey.ctx
+
+$ echo "plaintext" > plain.txt
+
+# satisfy the policy to access the key for signing use
+$ tpm2_startauthsession --policy-session -S session.ctx
+$ tpm2_policysecret -S session.ctx -c 0x01000000 pass123
+$ tpm2_nvread 0x01000000 -C o | xxd -p                   <---- notice pinCount increases by 1
+$ tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx
+$ tpm2_verifysignature -c rsakey.ctx -g sha256 -m plain.txt -s signature
+$ tpm2_flushcontext session.ctx
+
+# restricting the number of uses of an object with pinpass
+$ tpm2_startauthsession --policy-session -S session.ctx
+$ tpm2_policysecret -S session.ctx -c 0x01000000 pass123 
+$ tpm2_nvread 0x01000000 -C o | xxd -p                   <---- notice pinCount increases by 1
+$ tpm2_policysecret -S session.ctx -c 0x01000000 pass123
+$ tpm2_policysecret -S session.ctx -c 0x01000000 pass123
+$ tpm2_policysecret -S session.ctx -c 0x01000000 pass123
+$ tpm2_nvread 0x01000000 -C o | xxd -p                   <---- notice pinCount == pinLimit
+$ tpm2_policysecret -S session.ctx -c 0x01000000 pass123 <---- authorization using authValue will fail
+$ tpm2_flushcontext session.ctx
+
+# re-enable NV authValue
+$ tpm2_nvwrite 0x01000000 -C o -i data
+
+$ tpm2_nvundefine 0x01000000 -C o
+```
 
 ## Read EK Certificate
 
