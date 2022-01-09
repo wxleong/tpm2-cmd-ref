@@ -1331,7 +1331,7 @@ $ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsa
 
 $ echo "plaintext" > plain.txt
 
-# satisfy the policy to access the key for signing use
+# satisfy both policy to access the key for signing use
 $ tpm2_startauthsession -S session.ctx --policy-session
 $ tpm2_policycommandcode -S session.ctx TPM2_CC_Sign
 $ tpm2_policyauthorizenv -S session.ctx -C 0x1000000 -P pass123 0x1000000
@@ -1414,7 +1414,7 @@ $ tpm2_flushcontext session.ctx
 
 Enables policy authorization by evaluating the comparison operation on the TPMS_CLOCK_INFO: reset count, restart count, time, clock, and clock safe flag.
 
-One of the example is to restrict the usage of a key to only the first 2 minutes of TPM Clock:
+One example is to restrict the usage of a key to only the first 2 minutes of TPM Clock:
 ```
 # create the policy
 $ tpm2_startauthsession -S session.ctx
@@ -1457,7 +1457,60 @@ Couples a policy with command parameters of the command. Dependencies: tpm2_poli
 The policy needs tpm2_policyauthorize/tpm2_policyauthorizenv otherwise it turns into a chicken and egg problem. We know from the beginning, a policy has to be created first then it is set to an object. Finally, the policy protected object can be used to perform certain actions (e.g., sign, decrypt, ...). However, to create tpm2_policycphash you will need to generate cpHash and the cpHash recipe requires an object name. And that is exactly the chicken and egg problem, you cant create tpm2_policycphash without creating an object first; on the other hand, you cant create an object without creating a policy first. To break the deadlock, create an object with tpm2_policyauthorize/tpm2_policyauthorizenv. Now tpm2_policycphash can be associated with the object at a later stage.
 -->
 ```
+# create a signing authority
+$ openssl genrsa -out authority_sk.pem 2048
+$ openssl rsa -in authority_sk.pem -out authority_pk.pem -pubout
+$ tpm2_loadexternal -C o -G rsa -u authority_pk.pem -c authority_key.ctx -n authority_key.name
 
+# create an authorize policy
+$ tpm2_startauthsession -S session.ctx
+$ tpm2_policyauthorize -S session.ctx -L authorize.policy -n authority_key.name
+$ tpm2_flushcontext session.ctx
+
+# define a special purpose NV
+# The authValue of this NV will be used to authorize pinCount reset
+$ tpm2_nvdefine 0x01000001 -C o -a "authread|authwrite" -p pass123
+
+# define an NV pinpass safeguarded by the authorize policy
+$ tpm2_nvdefine 0x01000000 -C o -a "nt=pinpass|policywrite|authread|ownerwrite" -L authorize.policy
+
+# initialize the NV
+# set the TPMS_NV_PIN_COUNTER_PARAMETERS structure (pinCount=0|pinLimit=5)
+$ echo -n -e '\x00\x00\x00\x00\x00\x00\x00\x05' > data
+$ tpm2_nvwrite 0x01000000 -C o -i data
+
+# obtain cphash (the command will calculate cphash without performing NV write)
+# set the TPMS_NV_PIN_COUNTER_PARAMETERS structure (pinCount=0|pinLimit=5)
+$ tpm2_nvwrite 0x01000000 -C 0x01000000 -i data --cphash cp.hash
+
+# create cphash policy
+$ tpm2_startauthsession -S session.ctx
+$ tpm2_policycphash -S session.ctx -L cphash.policy --cphash cp.hash
+$ tpm2_policysecret -S session.ctx -L cphash+secret.policy -c 0x01000001 pass123    <----- use authvalue of another entity to authorize reset of pinCount
+$ tpm2_flushcontext session.ctx
+
+# authority sign the policy
+$ openssl dgst -sha256 -sign authority_sk.pem -out cphash+secret_policy.signature cphash+secret.policy
+
+# utilize NV authvalue to increase pinCount
+$ tpm2_nvread 0x01000000 -C 0x01000000 | xxd -p    <----- notice pinCount increases by 1
+$ tpm2_nvread 0x01000000 -C 0x01000000 | xxd -p
+$ tpm2_nvread 0x01000000 -C 0x01000000 | xxd -p
+
+# satisfy the policy to perform nvwrite to reset the pinCount
+$ tpm2_startauthsession --policy-session -S session.ctx
+$ tpm2_policycphash -S session.ctx --cphash cp.hash
+$ tpm2_policysecret -S session.ctx -c 0x01000001 pass123
+$ tpm2_verifysignature -c authority_key.ctx -g sha256 -m cphash+secret.policy -s cphash+secret_policy.signature -t cphash+secret_policy.ticket -f rsassa
+$ tpm2_policyauthorize -S session.ctx -i cphash+secret.policy -n authority_key.name -t cphash+secret_policy.ticket
+$ tpm2_nvwrite 0x01000000 -C 0x01000000 -i data -P session:session.ctx
+$ tpm2_flushcontext session.ctx
+
+# utilize NV authvalue to increase pinCount
+$ tpm2_nvread 0x01000000 -C 0x01000000 | xxd -p    <----- notice pinCount back to 1
+
+$ tpm2_nvundefine 0x01000000 -C o
+$ tpm2_nvundefine 0x01000001 -C o
 ```
 
 
