@@ -1137,6 +1137,7 @@ $ tpm2_setclock 10000
 ## PCR
 
 PCR bank allocation. In other words, enable/disable PCR banks. Cold/Warm reset the TPM after executing the following command to see the effects:
+<!-- TPM2_PCR_Allocate() takes effect at _TPM_Init(), not TPM2_Startup(). -->
 ```
 # enable only sha256 bank
 $ tpm2_pcrallocate sha1:none+sha256:all+sha384:none
