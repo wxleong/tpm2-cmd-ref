@@ -1942,6 +1942,10 @@ $ tpm2_nvundefine 0x01000001 -C o
 
 Restricts duplication to a specific new parent.
 
+<!-- 
+If duplication is allowed, authorization must always be provided by a policy session and the authPolicy equation of the object must contain a command that sets the policy command code to TPM_CC_Duplicate. tpm2_policyduplicationselect/tpm2_policycommandcode(TPM_CC_Duplicate) both will set policy command code to TPM_CC_Duplicate. There is no need to have both policies involve in a single operation.
+-->
+
 Not used in conjunction with tpm2_policyauthorize/tpm2_policyauthorizenv. Policy specifies only the new parent but not the duplication object:
 ```
 # create a source (old) parent and destination (new) parent
@@ -1955,7 +1959,7 @@ $ tpm2_policyduplicationselect -S session.ctx -N primary_sh_dest.name -L duplica
 $ tpm2_flushcontext session.ctx
 
 # create a key safeguarded by the policy
-$ tpm2_create -C primary_sh_scr.ctx -g sha256 -G ecc -u eckey.pub -r eckey.priv -L duplicate.policy -a "sensitivedataorigin|userwithauth|decrypt|sign"
+$ tpm2_create -C primary_sh_scr.ctx -g sha256 -G ecc -u eckey.pub -r eckey.priv -L duplicate.policy -a "sensitivedataorigin|userwithauth|sign"
 $ tpm2_load -C primary_sh_scr.ctx -u eckey.pub -r eckey.priv -c eckey.ctx
 $ tpm2_readpublic -c eckey.ctx -n eckey.name
 
@@ -1987,7 +1991,7 @@ $ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh_scr.ctx
 $ tpm2_createprimary -C n -g sha256 -G ecc -c primary_sh_dest.ctx
 
 # create a key safeguarded by the authorize policy
-$ tpm2_create -C primary_sh_scr.ctx -G ecc -u eckey.pub -r eckey.priv -L authorize.policy -a "sensitivedataorigin|userwithauth|decrypt|sign"
+$ tpm2_create -C primary_sh_scr.ctx -G ecc -u eckey.pub -r eckey.priv -L authorize.policy -a "sensitivedataorigin|userwithauth|sign"
 $ tpm2_load -C primary_sh_scr.ctx -u eckey.pub -r eckey.priv -n eckey.name -c eckey.ctx
 $ tpm2_readpublic -c eckey.ctx -n eckey.name
 
@@ -2015,8 +2019,29 @@ $ tpm2_load -C primary_sh_dest.ctx -u eckey.pub -r eckey_imported.priv -c eckey_
 
 #### tpm2_policylocality
 
-Restrict TPM object authorization to specific localities.
+Restrict TPM object authorization to specific localities. Changing locality of TPM varies on different platforms. Linux driver doesn't expose a mechanism for user space applications to set locality for the moment. The default locality used in Linux for user space applications is zero.
+<!--
+```
+# create a locality policy
+tpm2_startauthsession -S session.ctx
+tpm2_policylocality -S session.ctx -L locality.policy one
+tpm2_flushcontext session.ctx
 
+# create a key safeguarded by the locality policy
+tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
+tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv -L locality.policy -a "fixedtpm|fixedparent|sensitivedataorigin|decrypt|sign"
+tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsakey.ctx
+
+echo "plaintext" > plain.txt
+
+# satisfy policy to access the key for signing use
+tpm2_startauthsession -S session.ctx --policy-session
+tpm2_policylocality -S session.ctx one
+tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx
+tpm2_verifysignature -c rsakey.ctx -g sha256 -m plain.txt -s signature
+tpm2_flushcontext session.ctx
+```
+-->
 #### tpm2_policynamehash
 
 Couples a policy with names of specific objects.
