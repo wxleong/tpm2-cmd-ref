@@ -1488,8 +1488,8 @@ $ tpm2_nvwrite 0x01000000 -C 0x01000000 -i data --cphash cp.hash
 
 # create cphash policy
 $ tpm2_startauthsession -S session.ctx
-$ tpm2_policycphash -S session.ctx -L cphash.policy --cphash cp.hash
-$ tpm2_policysecret -S session.ctx -L cphash+secret.policy -c 0x01000001 pass123    <----- use authvalue of another entity to authorize reset of pinCount
+$ tpm2_policycphash -S session.ctx -L cphash.policy --cphash cp.hash             <----- restrict tpm2_nvwrite command parameters and handles
+$ tpm2_policysecret -S session.ctx -L cphash+secret.policy -c 0x01000001 pass123 <----- use authvalue of another entity to authorize reset of pinCount
 $ tpm2_flushcontext session.ctx
 
 # authority sign the policy
@@ -1515,7 +1515,6 @@ $ tpm2_nvread 0x01000000 -C 0x01000000 | xxd -p    <----- notice pinCount back t
 $ tpm2_nvundefine 0x01000000 -C o
 $ tpm2_nvundefine 0x01000001 -C o
 ```
-
 
 #### tpm2_policyduplicationselect
 
