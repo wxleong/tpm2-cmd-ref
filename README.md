@@ -2020,11 +2020,13 @@ $ tpm2_load -C primary_sh_dest.ctx -u eckey.pub -r eckey_imported.priv -c eckey_
 #### tpm2_policylocality
 
 Restrict TPM object authorization to specific localities. Changing locality of TPM varies on different platforms. Linux driver doesn't expose a mechanism for user space applications to set locality for the moment. The default locality used in Linux for user space applications is zero.
-<!--
+
+**Warning:** This example is expected to fail in tpm2-tools version 5.2, apply this [fix](https://github.com/tpm2-software/tpm2-tools/commit/7b6600d3214dd45531bdb53d5f2510404c31fd6b#diff-b7ca48acb8f12449d165509c68d04600fac53b56bfc4c43462908815b9602def) manually.
+
 ```
 # create a locality policy
 tpm2_startauthsession -S session.ctx
-tpm2_policylocality -S session.ctx -L locality.policy one
+tpm2_policylocality -S session.ctx -L locality.policy zero
 tpm2_flushcontext session.ctx
 
 # create a key safeguarded by the locality policy
@@ -2036,12 +2038,12 @@ echo "plaintext" > plain.txt
 
 # satisfy policy to access the key for signing use
 tpm2_startauthsession -S session.ctx --policy-session
-tpm2_policylocality -S session.ctx one
+tpm2_policylocality -S session.ctx zero
 tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx
 tpm2_verifysignature -c rsakey.ctx -g sha256 -m plain.txt -s signature
 tpm2_flushcontext session.ctx
 ```
--->
+
 #### tpm2_policynamehash
 
 Couples a policy with names of specific objects.
