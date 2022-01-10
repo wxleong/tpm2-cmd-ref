@@ -1454,7 +1454,7 @@ $ tpm2_flushcontext session.ctx
 
 #### tpm2_policycphash
 
-Couples a policy with command parameters of the command. Dependencies: tpm2_policyauthorize/tpm2_policyauthorizenv.
+Couples a policy with command parameters of the command. Used in conjunction with tpm2_policyauthorize/tpm2_policyauthorizenv.
 
 <!--
 The policy needs tpm2_policyauthorize/tpm2_policyauthorizenv otherwise it turns into a chicken and egg problem. We know from the beginning, a policy has to be created first then it is set to an object. Finally, the policy protected object can be used to perform certain actions (e.g., sign, decrypt, ...). However, to create tpm2_policycphash you will need to generate cpHash and the cpHash recipe requires an object name. And that is exactly the chicken and egg problem, you cant create tpm2_policycphash without creating an object first; on the other hand, you cant create an object without creating a policy first. To break the deadlock, create an object with tpm2_policyauthorize/tpm2_policyauthorizenv. Now tpm2_policycphash can be associated with the object at a later stage.
@@ -1519,6 +1519,39 @@ $ tpm2_nvundefine 0x01000001 -C o
 #### tpm2_policyduplicationselect
 
 Restricts duplication to a specific new parent.
+
+Not used in conjunction with tpm2_policyauthorize/tpm2_policyauthorizenv. Policy specifies only the new parent but not the duplication object:
+```
+# create a source (old) parent and destination (new) parent
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh_scr.ctx
+$ tpm2_createprimary -C n -g sha256 -G ecc -c primary_sh_dest.ctx
+
+# create a duplication policy
+$ tpm2_readpublic -c primary_sh_dest.ctx -n primary_sh_dest.name
+$ tpm2_startauthsession -S session.ctx
+$ tpm2_policyduplicationselect -S session.ctx -N primary_sh_dest.name -L duplicate.policy
+$ tpm2_flushcontext session.ctx
+
+# create a key safeguarded by the policy
+$ tpm2_create -C primary_sh_scr.ctx -g sha256 -G ecc -u eckey.pub -r eckey.priv -L duplicate.policy -a "sensitivedataorigin|userwithauth|decrypt|sign"
+$ tpm2_load -C primary_sh_scr.ctx -u eckey.pub -r eckey.priv -c eckey.ctx
+$ tpm2_readpublic -c eckey.ctx -n eckey.name
+
+# satisfy the policy and duplicate the key
+$ tpm2_startauthsession -S session.ctx --policy-session
+$ tpm2_policyduplicationselect -S session.ctx -N primary_sh_dest.name -n eckey.name
+$ tpm2_duplicate -C primary_sh_dest.ctx -c eckey.ctx -G null -p session:session.ctx -r eckey_dup.priv -s eckey_dup.seed
+$ tpm2_flushcontext session.ctx
+
+# import the key to the destination parent
+$ tpm2_import -C primary_sh_dest.ctx -u eckey.pub -r eckey_imported.priv -i eckey_dup.priv -s eckey_dup.seed
+$ tpm2_load -C primary_sh_dest.ctx -u eckey.pub -r eckey_imported.priv -c eckey_imported.ctx
+```
+
+Used in conjunction with tpm2_policyauthorize/tpm2_policyauthorizenv. Policy specifies the new parent and duplication object. This is to prevent, other objects with PolicyAuthorize (with same authority) from being duplicated:
+```
+
+```
 
 #### tpm2_policylocality
 
@@ -1657,7 +1690,7 @@ Activate credential:
 ```
 $ tpm2_startauthsession --policy-session -S session.ctx
 $ tpm2_policysecret -S session.ctx -c e
-$ tpm2_activatecredential -c 0x81010002 -C 0x81010001 -i data.cipher -o data.decipher -P "session:session.ctx"
+$ tpm2_activatecredential -c 0x81010002 -C 0x81010001 -i data.cipher -o data.decipher -P session:session.ctx
 $ tpm2_flushcontext session.ctx
 $ diff data.decipher data.clear
 ```
@@ -1684,7 +1717,7 @@ $ tpm2_create -C primary_sh.ctx -g sha256 -G ecc -r recipient_parent.prv -u reci
 
 \[Sender\] Create an RSA key under the primary object:
 ```
-$ tpm2_create -C primary_sh.ctx -g sha256 -G rsa -r rsakey.prv -u rsakey.pub  -L policy.ctx -a "sensitivedataorigin|userwithauth|decrypt|sign"
+$ tpm2_create -C primary_sh.ctx -g sha256 -G rsa -r rsakey.prv -u rsakey.pub -L policy.ctx -a "sensitivedataorigin|userwithauth|decrypt|sign"
 $ tpm2_load -C primary_sh.ctx -r rsakey.prv -u rsakey.pub -c rsakey.ctx
 $ tpm2_readpublic -c rsakey.ctx -o rsakey.pub
 ```
@@ -1694,14 +1727,14 @@ $ tpm2_readpublic -c rsakey.ctx -o rsakey.pub
 $ tpm2_startauthsession --policy-session -S session.ctx
 $ tpm2_policycommandcode -S session.ctx TPM2_CC_Duplicate
 $ tpm2_loadexternal -C o -u recipient_parent.pub -c recipient_parent.ctx
-$ tpm2_duplicate -C recipient_parent.ctx -c rsakey.ctx -G null -p "session:session.ctx" -r dup.priv -s dup.seed
+$ tpm2_duplicate -C recipient_parent.ctx -c rsakey.ctx -G null -p session:session.ctx -r dup.priv -s dup.seed
 $ tpm2_flushcontext session.ctx
 ```
 
 \[Recipient\] Import the blob (RSA key):
 ```
 $ tpm2_load -C primary_sh.ctx -u recipient_parent.pub -r recipient_parent.prv -c recipient_parent.ctx
-$ tpm2_import -C recipient_parent.ctx -u rsakey.pub -r rsakey_imported.prv -i dup.priv -s dup.seed -L policy.ctx
+$ tpm2_import -C recipient_parent.ctx -u rsakey.pub -r rsakey_imported.prv -i dup.priv -s dup.seed
 $ tpm2_load -C recipient_parent.ctx -u rsakey.pub -r rsakey_imported.prv -c rsakey_imported.ctx
 ```
 
@@ -1748,7 +1781,7 @@ $ tpm2_makecredential -e ek.pub -s innerwrapkey.clear -n $(xxd -ps -c 100 recipi
 $ tpm2_startauthsession --policy-session -S session.ctx
 $ tpm2_policycommandcode -S session.ctx TPM2_CC_Duplicate
 $ tpm2_loadexternal -C o -u recipient_parent.pub -c recipient_parent.ctx
-$ tpm2_duplicate -C recipient_parent.ctx -c rsakey.ctx -G aes -i innerwrapkey.clear -p "session:session.ctx" -r dup.priv -s dup.seed
+$ tpm2_duplicate -C recipient_parent.ctx -c rsakey.ctx -G aes -i innerwrapkey.clear -p session:session.ctx -r dup.priv -s dup.seed
 $ tpm2_flushcontext session.ctx
 ```
 
@@ -1756,13 +1789,13 @@ $ tpm2_flushcontext session.ctx
 ```
 $ tpm2_startauthsession --policy-session -S session.ctx
 $ tpm2_policysecret -S session.ctx -c e
-$ tpm2_activatecredential -c primary_sh.ctx -C 0x81010001 -i innerwrapkey.cipher -o innerwrapkey.decipher -P "session:session.ctx"
+$ tpm2_activatecredential -c primary_sh.ctx -C 0x81010001 -i innerwrapkey.cipher -o innerwrapkey.decipher -P session:session.ctx
 $ tpm2_flushcontext session.ctx
 ```
 
 \[Recipient\] Import the blob (RSA key):
 ```
-$ tpm2_import -C primary_sh.ctx -u rsakey.pub -r rsakey_imported.prv -k innerwrapkey.decipher -i dup.priv -s dup.seed -L policy.ctx
+$ tpm2_import -C primary_sh.ctx -u rsakey.pub -r rsakey_imported.prv -k innerwrapkey.decipher -i dup.priv -s dup.seed
 $ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey_imported.prv -c rsakey_imported.ctx
 ```
 
