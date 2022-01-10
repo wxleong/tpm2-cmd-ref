@@ -48,6 +48,25 @@ OPTIGA™ TPM 2.0 command reference and code examples.
     - **[Session-based Authorization](#session-based-authorization)**
         - **[HMAC](#hmac)**
         - **[Policy](#policy)**
+            - **[tpm2_policyauthorize](#tpm2_policyauthorize)**
+            - **[tpm2_policyauthorizenv](#tpm2_policyauthorizenv)**
+            - **[tpm2_policyauthvalue](#tpm2_policyauthvalue)**
+            - **[tpm2_policycommandcode](#tpm2_policycommandcode)**
+            - **[tpm2_policycountertimer](#tpm2_policycountertimer)**
+            - **[tpm2_policycphash](#tpm2_policycphash)**
+            - **[tpm2_policyduplicationselect](#tpm2_policyduplicationselect)**
+            - **[tpm2_policylocality](#tpm2_policylocality)**
+            - **[tpm2_policynamehash](#tpm2_policynamehash)**
+            - **[tpm2_policynv](#tpm2_policynv)**
+            - **[tpm2_policynvwritten](#tpm2_policynvwritten)**
+            - **[tpm2_policyor](#tpm2_policyor)**
+            - **[tpm2_policypassword](#tpm2_policypassword)**
+            - **[tpm2_policypcr](#tpm2_policypcr)**
+            - **[tpm2_policyrestart](#tpm2_policyrestart)**
+            - **[tpm2_policysecret](#tpm2_policysecret)**
+            - **[tpm2_policysigned](#tpm2_policysigned)**
+            - **[tpm2_policytemplate](#tpm2_policytemplate)**
+            - **[tpm2_policyticket](#tpm2_policyticket)**
     - **[Set Hierarchy Auth Value](#set-hierarchy-auth-value)**
     - **[Set Hierarchy Policy](#set-hierarchy-policy)**
     - **[Signing & Verification](#signing--verification)**
