@@ -1028,7 +1028,7 @@ $ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsa
 
 $ echo "plaintext" > plain.txt
 
-# satisfy the policy to access the key for signing use
+# satisfy the policy and use the key for signing
 $ tpm2_startauthsession --policy-session -S session.ctx
 $ tpm2_policysecret -S session.ctx -c 0x01000000 pass123
 $ tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx
@@ -1099,7 +1099,7 @@ $ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsa
 
 $ echo "plaintext" > plain.txt
 
-# satisfy the policy to access the key for signing use
+# satisfy the policy and use the key for signing
 $ tpm2_startauthsession --policy-session -S session.ctx
 $ tpm2_policysecret -S session.ctx -c 0x01000000 pass123
 $ tpm2_nvread 0x01000000 -C o | xxd -p                   <---- notice pinCount increases by 1
@@ -1694,11 +1694,11 @@ $ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsa
 
 $ echo "plaintext" > plain.txt
 
-# satisfy the policy to access the key for signing use
+# satisfy the policy and use the key for signing
 $ tpm2_startauthsession --policy-session -S session.ctx
 $ tpm2_policycommandcode -S session.ctx TPM2_CC_Sign
 $ tpm2_verifysignature -c authority_key.ctx -g sha256 -m sign.policy -s sign_policy.signature -t sign_policy.ticket -f rsassa
-$ tpm2_policyauthorize -S session.ctx -L authorize.policy -i sign.policy -n authority_key.name -t sign_policy.ticket
+$ tpm2_policyauthorize -S session.ctx -i sign.policy -n authority_key.name -t sign_policy.ticket
 $ tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx
 $ tpm2_verifysignature -c rsakey.ctx -g sha256 -m plain.txt -s signature
 $ tpm2_flushcontext session.ctx
@@ -1719,7 +1719,7 @@ $ tpm2_rsaencrypt -c rsakey.ctx -o secret.cipher secret.clear
 $ tpm2_startauthsession --policy-session -S session.ctx
 $ tpm2_policycommandcode -S session.ctx TPM2_CC_RSA_Decrypt
 $ tpm2_verifysignature -c authority_key.ctx -g sha256 -m decrypt.policy -s decrypt_policy.signature -t decrypt_policy.ticket -f rsassa
-$ tpm2_policyauthorize -S session.ctx -L authorize.policy -i decrypt.policy -n authority_key.name -t decrypt_policy.ticket
+$ tpm2_policyauthorize -S session.ctx -i decrypt.policy -n authority_key.name -t decrypt_policy.ticket
 $ tpm2_rsadecrypt -c rsakey.ctx -o secret.decipher secret.cipher -p session:session.ctx
 $ diff secret.decipher secret.clear
 $ tpm2_flushcontext session.ctx
@@ -1801,7 +1801,7 @@ $ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsa
 
 $ echo "plaintext" > plain.txt
 
-# satisfy the policy to access the key for signing use
+# satisfy the policy and use the key for signing
 $ tpm2_startauthsession -S session.ctx --policy-session
 $ tpm2_policyauthvalue -S session.ctx
 $ tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx+pass123
@@ -1827,7 +1827,7 @@ $ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsa
 
 $ echo "plaintext" > plain.txt
 
-# satisfy the policy to access the key for signing use
+# satisfy the policy and use the key for signing
 $ tpm2_startauthsession --policy-session -S session.ctx
 $ tpm2_policycommandcode -S session.ctx TPM2_CC_Sign
 $ tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx
@@ -1856,7 +1856,7 @@ $ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsa
 
 $ echo "plaintext" > plain.txt
 
-# satisfy the policy to access the key for signing use
+# satisfy the policy and use the key for signing
 $ tpm2_startauthsession --policy-session -S session.ctx
 $ tpm2_policycountertimer -S session.ctx --ult clock=120000
 $ tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx
@@ -1922,7 +1922,7 @@ $ tpm2_nvread 0x01000000 -C 0x01000000 | xxd -p    <----- notice pinCount increa
 $ tpm2_nvread 0x01000000 -C 0x01000000 | xxd -p
 $ tpm2_nvread 0x01000000 -C 0x01000000 | xxd -p
 
-# satisfy the policy to perform nvwrite to reset the pinCount
+# satisfy the policy and perform nvwrite to reset the pinCount
 $ tpm2_startauthsession --policy-session -S session.ctx
 $ tpm2_policycphash -S session.ctx --cphash cp.hash
 $ tpm2_policysecret -S session.ctx -c 0x01000001 pass123
@@ -1970,9 +1970,47 @@ $ tpm2_import -C primary_sh_dest.ctx -u eckey.pub -r eckey_imported.priv -i ecke
 $ tpm2_load -C primary_sh_dest.ctx -u eckey.pub -r eckey_imported.priv -c eckey_imported.ctx
 ```
 
-Used in conjunction with tpm2_policyauthorize/tpm2_policyauthorizenv. Policy specifies the new parent and duplication object. This is to prevent, other objects with PolicyAuthorize (with same authority) from being duplicated:
+Used in conjunction with tpm2_policyauthorize/tpm2_policyauthorizenv. Policy specifies the new parent and duplication object. This is to prevent other objects with PolicyAuthorize (with same authority) from being allowed to perform duplication:
 ```
+# create a signing authority
+$ openssl genrsa -out authority_sk.pem 2048
+$ openssl rsa -in authority_sk.pem -out authority_pk.pem -pubout
+$ tpm2_loadexternal -C o -G rsa -u authority_pk.pem -c authority_key.ctx -n authority_key.name
 
+# create an authorize policy
+$ tpm2_startauthsession -S session.ctx
+$ tpm2_policyauthorize -S session.ctx -L authorize.policy -n authority_key.name
+$ tpm2_flushcontext session.ctx
+
+# create a source (old) parent and destination (new) parent
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh_scr.ctx
+$ tpm2_createprimary -C n -g sha256 -G ecc -c primary_sh_dest.ctx
+
+# create a key safeguarded by the authorize policy
+$ tpm2_create -C primary_sh_scr.ctx -G ecc -u eckey.pub -r eckey.priv -L authorize.policy -a "sensitivedataorigin|userwithauth|decrypt|sign"
+$ tpm2_load -C primary_sh_scr.ctx -u eckey.pub -r eckey.priv -n eckey.name -c eckey.ctx
+$ tpm2_readpublic -c eckey.ctx -n eckey.name
+
+# create a duplication policy
+$ tpm2_readpublic -c primary_sh_dest.ctx -n primary_sh_dest.name
+$ tpm2_startauthsession -S session.ctx
+$ tpm2_policyduplicationselect -S session.ctx -N primary_sh_dest.name -n eckey.name -L duplicate.policy
+$ tpm2_flushcontext session.ctx
+
+# authority sign the duplication policy
+$ openssl dgst -sha256 -sign authority_sk.pem -out duplicate_policy.signature duplicate.policy
+
+# satisfy the policy and duplicate the key
+$ tpm2_startauthsession -S session.ctx --policy-session
+$ tpm2_policyduplicationselect -S session.ctx -N primary_sh_dest.name -n eckey.name
+$ tpm2_verifysignature -c authority_key.ctx -g sha256 -m duplicate.policy -s duplicate_policy.signature -t duplicate_policy.ticket -f rsassa
+$ tpm2_policyauthorize -S session.ctx -i duplicate.policy -n authority_key.name -t duplicate_policy.ticket
+$ tpm2_duplicate -C primary_sh_dest.ctx -c eckey.ctx -G null -p session:session.ctx -r eckey_dup.priv -s eckey_dup.seed
+$ tpm2_flushcontext session.ctx
+
+# import the key to the destination parent
+$ tpm2_import -C primary_sh_dest.ctx -u eckey.pub -r eckey_imported.priv -i eckey_dup.priv -s eckey_dup.seed
+$ tpm2_load -C primary_sh_dest.ctx -u eckey.pub -r eckey_imported.priv -c eckey_imported.ctx
 ```
 
 #### tpm2_policylocality
