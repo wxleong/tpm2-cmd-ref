@@ -909,6 +909,7 @@ Define an NV for pinfail operation:
 <!-- Use `tpm2_nvread 0x01000000 -C o` to read the NV instead of `tpm2_nvread 0x01000000 -C 0x01000000 -P pass123`, because a successful authentication using index authvalue will reset the pinCount -->
 <!-- If TPM_NT is TPM_NT_PIN_FAIL, TPMA_NV_NO_DA must be SET. This removes ambiguity over which Dictionary Attack defense protects a TPM_NV_PIN_FAIL's authValue. -->
 <!-- TPMA_NV_AUTHWRITE must set to CLEAR. For reasoning purpose: imagine if TPMA_NV_AUTHWRITE was SET for a pinpass/pinfail, a user knowing the authorization value could decrease pinCount or increase pinLimit, defeating the purpose of a pinfail/pinfail. -->
+<!-- pinCount is incremented after an authorization attempt using authValue succeeds -->
 ```
 $ tpm2_nvdefine 0x01000000 -C o -a "nt=pinfail|ownerwrite|ownerread|authread|no_da" -p pass123
 
@@ -981,6 +982,7 @@ $ tpm2_nvundefine 0x01000000 -C o
 Define an NV for pinpass operation:
 <!-- Use `tpm2_nvread 0x01000000 -C o` to read the NV instead of `tpm2_nvread 0x01000000 -C 0x01000000 -P pass123`, because a successful authentication using index authvalue will increase the pinCount -->
 <!-- TPMA_NV_AUTHWRITE must set to CLEAR. For reasoning purpose: imagine if TPMA_NV_AUTHWRITE was SET for a pinpass/pinfail, a user knowing the authorization value could decrease pinCount or increase pinLimit, defeating the purpose of a pinfail/pinfail. -->
+<!-- pinCount is incremented after an authorization attempt using authValue fails -->
 ```
 $ tpm2_nvdefine 0x01000000 -C o -a "nt=pinpass|ownerwrite|ownerread|authread" -p pass123
 
