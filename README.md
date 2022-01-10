@@ -38,7 +38,7 @@ OPTIGA™ TPM 2.0 command reference and code examples.
         - **[Under a Parent Key](#under-a-parent-key)**
         - **[Under Hierarchy](#under-hierarchy)**
     - **[EK Credential](#ek-credential)**
-    - **[Secure Key Transfer](#secure-key-transfer)**
+    - **[Secure Key Transfer (Duplicate Key)](#secure-key-transfer-duplicate-key)**
         - **[Without Credential Protection](#without-credential-protection)**
         - **[With Credential Protection](#with-credential-protection)**
     - **[Encrypted Session](#encrypted-session)**
@@ -1662,7 +1662,7 @@ $ tpm2_flushcontext session.ctx
 $ diff data.decipher data.clear
 ```
 
-## Secure Key Transfer
+## Secure Key Transfer (Duplicate Key)
 
 Examples showing here are in the following settings:
 - Both sender and recipient resided on a same TPM. Alternatively, it is possible to have recipient on another TPM.
