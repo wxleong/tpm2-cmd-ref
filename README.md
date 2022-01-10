@@ -695,6 +695,8 @@ Using a HMAC session to enable encryption of selected parameters.
 
 Get random:
 ```
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
+
 $ tpm2_startauthsession --hmac-session -c primary_sh.ctx -S session.ctx
 $ tpm2_getrandom -S session.ctx --hex 16
 $ tpm2_flushcontext session.ctx
@@ -702,6 +704,8 @@ $ tpm2_flushcontext session.ctx
 
 Decryption:
 ```
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
+
 $ echo "some secret" > secret.clear
 $ tpm2_rsaencrypt -c rsakey.ctx -o secret.cipher secret.clear
 
@@ -712,6 +716,8 @@ $ tpm2_flushcontext session.ctx
 
 Sign:
 ```
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
+
 $ echo "some message" > message
 
 $ tpm2_startauthsession --hmac-session -c primary_sh.ctx -S session.ctx
@@ -723,6 +729,8 @@ $ tpm2_verifysignature -c rsakey.ctx -g sha256 -m message -s signature
 
 HMAC:
 ```
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
+
 $ echo "some message" > message
 
 $ tpm2_startauthsession --hmac-session -c primary_sh.ctx -S session.ctx
@@ -732,6 +740,8 @@ $ tpm2_flushcontext session.ctx
 
 NV operations:
 ```
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
+
 $ dd bs=1 count=32 </dev/urandom >data
 $ tpm2_nvdefine 0x01000000 -C o -s 32 -a "ownerwrite|ownerread"
 
@@ -821,6 +831,8 @@ $ tpm2_getcap properties-variable
 
 RSA key:
 ```
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
+
 $ openssl genrsa -out rsa_private.pem 2048
 $ tpm2_import -C primary_sh.ctx -G rsa -i rsa_private.pem -u rsakey_imported.pub -r rsakey_imported.priv
 $ tpm2_load -C primary_sh.ctx -u rsakey_imported.pub -r rsakey_imported.priv -c rsakey_imported.ctx
@@ -828,6 +840,8 @@ $ tpm2_load -C primary_sh.ctx -u rsakey_imported.pub -r rsakey_imported.priv -c 
 
 EC key:
 ```
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
+
 $ openssl ecparam -name prime256v1 -genkey -noout -out ecc_private.pem
 $ tpm2_import -C primary_sh.ctx -G ecc -i ecc_private.pem -u eckey_imported.pub -r eckey_imported.priv
 $ tpm2_load -C primary_sh.ctx -u eckey_imported.pub -r eckey_imported.priv -c eckey_imported.ctx
@@ -835,6 +849,8 @@ $ tpm2_load -C primary_sh.ctx -u eckey_imported.pub -r eckey_imported.priv -c ec
 
 HMAC key:
 ```
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
+
 $ dd if=/dev/urandom of=raw.key bs=1 count=32
 $ tpm2_import -C primary_sh.ctx -G hmac -i raw.key -u hmackey_imported.pub -r hmackey_imported.priv
 $ tpm2_load -C primary_sh.ctx -u hmackey_imported.pub -r hmackey_imported.priv -c hmackey_imported.ctx
@@ -1216,6 +1232,8 @@ $ openssl pkeyutl -pubin -inkey eckey.pub.pem -verify -in data -sigfile data.sig
 
 Generate persistent RSA and EC keys using tpm2-tools:
 ```
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
+
 $ tpm2_create -C primary_sh.ctx -g sha256 -G rsa -u rsakey.pub -r rsakey.priv -a "fixedtpm|fixedparent|sensitivedataorigin|userwithauth|decrypt|sign|noda"
 $ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -c rsakey.ctx
 $ tpm2_evictcontrol -C o -c rsakey.ctx 0x81000002
@@ -1303,7 +1321,6 @@ $ curl --insecure --engine tpm2tss --key-type ENG --key rsakey.pem --cert rsakey
 
 Create key & self-signed certificate:
 ```
-$ cd /tmp
 $ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
 $ tpm2_create -C primary_sh.ctx -g sha256 -G rsa -u rsakey.pub -r rsakey.priv -a "fixedtpm|fixedparent|sensitivedataorigin|userwithauth|decrypt|sign|noda"
 $ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -c rsakey.ctx
@@ -1366,6 +1383,8 @@ A plaintext password value may be used to authorize an action when use of an aut
 <!-- https://github.com/tpm2-software/tpm2-tools/pull/2719 -->
 
 ```
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
+
 # create a key safeguarded by the a password
 $ tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv -a "fixedtpm|fixedparent|sensitivedataorigin|userwithauth|decrypt|sign" -p pass123
 $ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsakey.ctx
@@ -1412,11 +1431,13 @@ $ tpm2_pcrextend 9:sha256=beefcafebeefcafebeefcafebeefcafebeefcafebeefcafebeefca
 
 Make storage key persistent:
 ```
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
 $ tpm2_evictcontrol -C o -c primary_sh.ctx 0x81000001
 ```
 
 Make platform key persistent:
 ```
+$ tpm2_createprimary -C p -g sha256 -G ecc -c primary_ph.ctx
 $ tpm2_evictcontrol -C p -c primary_ph.ctx 0x81800001
 ```
 
@@ -1467,6 +1488,8 @@ $ tpm2_getekcertificate -o rsa_ek.crt.der -o ecc_ek.crt.der
 
 Seal data to a TPM:
 ```
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
+
 $ echo "some message" > message
 
 # seal
@@ -1495,6 +1518,7 @@ $ tpm2_flushcontext session.ctx
 
 \[Recipient\] Create a recipient's parent key:
 ```
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
 $ tpm2_create -C primary_sh.ctx -g sha256 -G ecc -r recipient_parent.prv -u recipient_parent.pub -a "restricted|sensitivedataorigin|decrypt|userwithauth"
 ```
 
@@ -1537,6 +1561,7 @@ $ tpm2_createek -c 0x81010001 -G rsa -u ek.pub
 
 \[Recipient\] Read recipient public component:
 ```
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
 $ tpm2_readpublic -c primary_sh.ctx -o recipient_parent.pub -n recipient_parent.name
 ```
 
@@ -1601,6 +1626,7 @@ Once a TPM has received TPM2_SelfTest() and before completion of all tests, the 
 Commands below should have the same effect as password authorization due to tpm2-tools implementation. It treats all password authorization as HMAC session-based authorization:
 ```
 # create a key safeguarded by the a password
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
 $ tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv -a "fixedtpm|fixedparent|sensitivedataorigin|userwithauth|decrypt|sign" -p pass123
 $ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsakey.ctx
 
@@ -1643,6 +1669,7 @@ $ tpm2_flushcontext session.ctx
 $ openssl dgst -sha256 -sign authority_sk.pem -out sign_policy.signature sign.policy
 
 # create a key safeguarded by the authorize policy
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
 $ tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv -L authorize.policy -a "fixedtpm|fixedparent|sensitivedataorigin|decrypt|sign"
 $ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsakey.ctx
 
@@ -1702,6 +1729,7 @@ $ tpm2_policyauthorizenv -S session.ctx -C 0x1000000 -P pass123 -L authorizenv.p
 $ tpm2_flushcontext session.ctx
 
 # create a key safeguarded by the authorize NV policy
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
 $ tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv -L authorizenv.policy -a "fixedtpm|fixedparent|sensitivedataorigin|decrypt|sign"
 $ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsakey.ctx
 
@@ -1748,6 +1776,7 @@ $ tpm2_policyauthvalue -S session.ctx -L authvalue.policy
 $ tpm2_flushcontext session.ctx
 
 # create a key safeguarded by the policy
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
 $ tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv -L authvalue.policy -a "fixedtpm|fixedparent|sensitivedataorigin|decrypt|sign" -p pass123
 $ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsakey.ctx
 
@@ -1773,6 +1802,7 @@ $ tpm2_policycommandcode -S session.ctx TPM2_CC_Sign -L sign.policy
 $ tpm2_flushcontext session.ctx
 
 # create a key safeguarded by the policy
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
 $ tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv -L sign.policy -a "fixedtpm|fixedparent|sensitivedataorigin|decrypt|sign"
 $ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsakey.ctx
 
