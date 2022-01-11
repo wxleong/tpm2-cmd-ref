@@ -1667,6 +1667,7 @@ Enhanced authorization is a TPM capability that allows entity-creators or admini
 #### tpm2_policyauthorize
 
 Allows for mutable policies by tethering to a signing authority. In this approach, authority can add new policy but unable to revoke old policy:
+<!-- This is an immediate assertion. This assertion evaluation checks to see if the current policyDigest is authorized by a signing key. So the order of tpm2_policyauthorize matters. Only authority signed policies should appear before tpm2_policyauthorize assertion, other policies should appear after tpm2_policyauthorize. -->
 
 ```
 # create a signing authority
@@ -1728,6 +1729,7 @@ $ tpm2_flushcontext session.ctx
 #### tpm2_policyauthorizenv
 
 Allows for mutable policies by referencing to a policy from an NV index. In other words, an object policy is stored in NV and it can be replaced any time, hence mutable policy:
+<!-- This is an immediate assertion. This assertion evaluation checks to see if the current policyDigest is equivalent to the computed policy stored in NV. So the order of tpm2_policyauthorizenv matters. Only policies that associated with the policy value stored in NV should appear before tpm2_policyauthorizenv assertion, other policies should appear after tpm2_policyauthorizenv. -->
 
 ```
 # create NV to store policy
@@ -2046,7 +2048,17 @@ tpm2_flushcontext session.ctx
 
 #### tpm2_policynamehash
 
-Couples a policy with names of specific objects.
+Couples a policy with names of specific objects. Names of all object handles in a TPM command is checked against the one specified in the policy. Used in conjunction with tpm2_policyauthorize/tpm2_policyauthorizenv.
+
+This command allows a policy to be bound to a specific set of TPM entities without being bound to the parameters of the command. This is most useful for commands such as TPM2_Duplicate() and for TPM2_PCR_Event() when the referenced PCR requires a policy.
+
+Example, duplicate:
+```
+```
+
+Example, pcrevent:
+```
+```
 
 #### tpm2_policynv
 
