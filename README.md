@@ -2220,15 +2220,8 @@ Create a policy that includes specific PCR values.
 
 #### tpm2_policyrestart
 
-This is not a policy. This command is used for restarting an existing session with the TPM by clearing the policy digest to its initial state.
+This is not a policy. This command allows a policy authorization session to be returned to its initial state.
 
-Instead of repeating the following scope:
-```
-$ tpm2_startauthsession --policy-session -S session.ctx
-$ tpm2_policy...
-$ tpm2_...
-$ tpm2_flushcontext session.ctx
-```
 You may restart the existing session:
 ```
 $ tpm2_startauthsession --policy-session -S session.ctx
