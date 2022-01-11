@@ -2163,6 +2163,27 @@ $ tpm2_nvundefine 0x01000000 -C o
 
 Restrict TPM object authorization to the written state (TPMA_NV_WRITTEN attribute) of an NV index.
 
+Example, create a one time programmable NV:
+```
+# create the policy
+$ tpm2_startauthsession -S session.ctx
+$ tpm2_policycommandcode -S session.ctx TPM2_CC_NV_Write
+$ tpm2_policynvwritten -S session.ctx -L cc+nvwritten.policy c
+$ tpm2_flushcontext session.ctx
+
+# define an NV safeguarded by the policy
+$ tpm2_nvdefine -C o 0x01000000 -s 1 -a "authread|policywrite" -L cc+nvwritten.policy
+
+# satisfy the policy and write the NV
+$ tpm2_startauthsession -S session.ctx --policy-session
+$ tpm2_policycommandcode -S session.ctx TPM2_CC_NV_Write
+$ tpm2_policynvwritten -S session.ctx c
+$ echo 0xAA | xxd -r -p | tpm2_nvwrite 0x01000000 -i - -P session:session.ctx
+$ tpm2_flushcontext session.ctx
+
+$ tpm2_nvundefine 0x01000000 -C o
+```
+
 #### tpm2_policyor
 
 Logically OR's two policies together.
