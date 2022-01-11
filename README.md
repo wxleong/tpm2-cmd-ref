@@ -2107,7 +2107,57 @@ Example, pcrevent:
 
 #### tpm2_policynv
 
-Evaluates policy authorization by comparing a specified value against the contents in the specified NV Index.
+Evaluates policy authorization by comparing a specified value against the contents in the specified NV Index. The comparison operator can be specified as follows:
+- "eq" if operandA = operandB
+- "neq" if operandA != operandB
+- "sgt" if signed operandA > signed operandB
+- "ugt" if unsigned operandA > unsigned operandB
+- "slt" if signed operandA < signed operandB
+- "ult" if unsigned operandA < unsigned operandB
+- "sge" if signed operandA >= signed operandB
+- "uge" if unsigned operandA >= unsigned operandB
+- "sle" if signed operandA <= unsigned operandB
+- "ule" if unsigned operandA <= unsigned operandB
+- "bs" if all bits set in operandA are set in operandB
+- "bc" if all bits set in operandA are clear in operandB
+
+<!-- It is an immediate assertion. The name of NV index is taken into the policy calculation, so the NV has to be initialized before trial policy session. -->
+
+```
+# define a special purpose NV
+# The value of this NV will be used for authorization
+$ tpm2_nvdefine 0x01000000 -C o -a "authread|authwrite" -s 1 -p pass123
+
+# initialize the NV before creating the policy
+$ echo -n -e '\x00' > init.bin
+$ tpm2_nvwrite 0x01000000 -C 0x01000000 -P pass123 -i init.bin
+
+# create policynv. The policy checks if the NV value is equivalent to expected.bin
+$ echo -n -e '\x55' > expected.bin
+$ tpm2_startauthsession -S session.ctx
+$ tpm2_policynv -S session.ctx 0x01000000 eq -i expected.bin -P pass123 -L nv.policy
+$ tpm2_flushcontext session.ctx
+
+# create a key safeguarded by the policy
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
+$ tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv -L nv.policy -a "fixedtpm|fixedparent|sensitivedataorigin|decrypt|sign"
+$ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsakey.ctx
+
+# write the expected data into NV
+$ echo -n -e '\x55' > data.bin
+$ tpm2_nvwrite 0x01000000 -C 0x01000000 -P pass123 -i data.bin
+
+$ echo "plaintext" > plain.txt
+
+# satisfy the policy and use the key for signing
+$ tpm2_startauthsession -S session.ctx --policy-session
+$ tpm2_policynv -S session.ctx 0x01000000 eq -i expected.bin -P pass123
+$ tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx
+$ tpm2_verifysignature -c rsakey.ctx -g sha256 -m plain.txt -s signature
+$ tpm2_flushcontext session.ctx
+
+$ tpm2_nvundefine 0x01000000 -C o
+```
 
 #### tpm2_policynvwritten
 
