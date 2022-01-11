@@ -39,6 +39,7 @@ OPTIGA™ TPM 2.0 command reference and code examples.
     - **[PCR](#pcr)**
     - **[Persistent Key](#persistent-key)**
     - **[PKCS #11](#pkcs-11)**
+    - **[Quote](#quote)**
 	- **[Read EK Certificate](#read-ek-certificate)**
     - **[Seal](#seal)**
     - **[Secure Key Transfer (Duplicate Key)](#secure-key-transfer-duplicate-key)**
@@ -1480,6 +1481,10 @@ $ tpm2_evictcontrol -C p -c 0x81800001
 ## PKCS #11
 
 Please refer to [[7]](#7).
+
+## Quote
+
+to-do
 
 ## Read EK Certificate
 
