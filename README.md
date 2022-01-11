@@ -2189,6 +2189,50 @@ $ tpm2_nvundefine 0x01000000 -C o
 
 Logically OR's two policies together.
 
+```
+# define a special purpose NV
+# The authValue of this NV will be used on another entity
+$ tpm2_nvdefine 0x01000000 -C o -a "authread|authwrite" -s 1 -p admin123
+
+# create a secret policy to use authValue of another entity
+$ tpm2_startauthsession -S session.ctx
+$ tpm2_policysecret -S session.ctx -c 0x01000000 -L secret.policy admin123
+$ tpm2_flushcontext session.ctx
+
+# create an authvalue policy
+$ tpm2_startauthsession -S session.ctx
+$ tpm2_policyauthvalue -S session.ctx -L authvalue.policy
+$ tpm2_flushcontext session.ctx
+
+# compound the two policies in an OR fashion
+$ tpm2_startauthsession -S session.ctx
+$ tpm2_policyor -S session.ctx -L secret+or+authvalue.policy sha256:secret.policy,authvalue.policy
+$ tpm2_flushcontext session.ctx
+
+# create a key safeguarded by the policy
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
+$ tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv -p user123 -L secret+or+authvalue.policy -a "fixedtpm|fixedparent|sensitivedataorigin|decrypt|sign"
+$ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsakey.ctx
+
+# satisfy just the secret policy and use the key for signing
+$ tpm2_startauthsession -S session.ctx --policy-session
+$ tpm2_policysecret -S session.ctx -c 0x01000000 admin123
+$ tpm2_policyor -S session.ctx sha256:secret.policy,authvalue.policy
+$ tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx
+$ tpm2_verifysignature -c rsakey.ctx -g sha256 -m plain.txt -s signature
+$ tpm2_flushcontext session.ctx
+
+# satisfy just the authvalue policy and use the key for signing
+$ tpm2_startauthsession -S session.ctx --policy-session
+$ tpm2_policyauthvalue -S session.ctx
+$ tpm2_policyor -S session.ctx sha256:secret.policy,authvalue.policy
+$ tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx+user123
+$ tpm2_verifysignature -c rsakey.ctx -g sha256 -m plain.txt -s signature
+$ tpm2_flushcontext session.ctx
+
+$ tpm2_nvundefine 0x01000000 -C o
+```
+
 #### tpm2_policypassword
 
 Enables binding a policy to the authorization value of the authorized TPM object. Enables a policy that requires the object's authentication passphrase be provided. This is equivalent to authenticating using the object passphrase in plaintext, only this enforces it as a policy.
