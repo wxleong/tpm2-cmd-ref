@@ -2021,9 +2021,9 @@ $ tpm2_load -C primary_sh_dest.ctx -u eckey.pub -r eckey_imported.priv -c eckey_
 
 #### tpm2_policylocality
 
-Restrict TPM object authorization to specific localities. Changing locality of TPM varies on different platforms. Linux driver doesn't expose a mechanism for user space applications to set locality for the moment. The default locality used in Linux for user space applications is zero.
+Restrict TPM object authorization to specific localities. Changing locality of TPM varies on different platforms. Linux driver doesn't expose a mechanism for user space applications to set locality for the moment ([[11]](#11)). The default locality used in Linux for user space applications is zero.
 
-**Warning:** This example is expected to fail in tpm2-tools version 5.2, apply this [fix](https://github.com/tpm2-software/tpm2-tools/commit/7b6600d3214dd45531bdb53d5f2510404c31fd6b#diff-b7ca48acb8f12449d165509c68d04600fac53b56bfc4c43462908815b9602def) manually.
+**Warning:** Apply the fix ([[12]](#12)) to pass the example using tpm2-tools version 5.2.
 
 ```
 # create a locality policy
@@ -2262,6 +2262,8 @@ $ tpm2_changeeps
 <a id="8">[8] https://github.com/wxleong/tpm2-rpi4</a><br>
 <a id="9">[9] https://trustedcomputinggroup.org/resource/tpm-library-specification/</a><br>
 <a id="10">[10] https://www.infineon.com/cms/en/product/evaluation-boards/iridium9670-tpm2.0-linux/</a><br>
+<a id="11">[11] https://github.com/tpm2-software/tpm2-tss/blob/master/src/tss2-tcti/tcti-device.c#L371</a><br>
+<a id="12">[12] https://github.com/tpm2-software/tpm2-tools/commit/7b6600d3214dd45531bdb53d5f2510404c31fd6b#diff-b7ca48acb8f12449d165509c68d04600fac53b56bfc4c43462908815b9602def</a><br>
 
 # License
 
