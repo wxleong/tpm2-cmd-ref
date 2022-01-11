@@ -1962,8 +1962,7 @@ $ tpm2_flushcontext session.ctx
 
 # create a key safeguarded by the policy
 $ tpm2_create -C primary_sh_scr.ctx -g sha256 -G ecc -u eckey.pub -r eckey.priv -L duplicate.policy -a "sensitivedataorigin|userwithauth|sign"
-$ tpm2_load -C primary_sh_scr.ctx -u eckey.pub -r eckey.priv -c eckey.ctx
-$ tpm2_readpublic -c eckey.ctx -n eckey.name
+$ tpm2_load -C primary_sh_scr.ctx -u eckey.pub -r eckey.priv -n eckey.name -c eckey.ctx
 
 # satisfy the policy and duplicate the key
 $ tpm2_startauthsession -S session.ctx --policy-session
@@ -1995,7 +1994,6 @@ $ tpm2_createprimary -C n -g sha256 -G ecc -c primary_sh_dest.ctx
 # create a key safeguarded by the authorize policy
 $ tpm2_create -C primary_sh_scr.ctx -G ecc -u eckey.pub -r eckey.priv -L authorize.policy -a "sensitivedataorigin|userwithauth|sign"
 $ tpm2_load -C primary_sh_scr.ctx -u eckey.pub -r eckey.priv -n eckey.name -c eckey.ctx
-$ tpm2_readpublic -c eckey.ctx -n eckey.name
 
 # create a duplication policy
 $ tpm2_readpublic -c primary_sh_dest.ctx -n primary_sh_dest.name
@@ -2052,13 +2050,60 @@ Couples a policy with names of specific objects. Names of all object handles in 
 
 This command allows a policy to be bound to a specific set of TPM entities without being bound to the parameters of the command. This is most useful for commands such as TPM2_Duplicate() and for TPM2_PCR_Event() when the referenced PCR requires a policy.
 
-Example, duplicate:
+Example, to authorize key duplication:
 ```
+# create a signing authority
+$ openssl genrsa -out authority_sk.pem 2048
+$ openssl rsa -in authority_sk.pem -out authority_pk.pem -pubout
+$ tpm2_loadexternal -C o -G rsa -u authority_pk.pem -c authority_key.ctx -n authority_key.name
+
+# create an authorize + commandcode policy
+$ tpm2_startauthsession -S session.ctx
+$ tpm2_policyauthorize -S session.ctx -n authority_key.name
+$ tpm2_policycommandcode -S session.ctx -L authorize+cc.policy TPM2_CC_Duplicate
+$ tpm2_flushcontext session.ctx
+
+# create a source (old) parent and destination (new) parent
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh_scr.ctx
+$ tpm2_createprimary -C n -g sha256 -G ecc -c primary_sh_dest.ctx
+
+# create a key safeguarded by the authorize policy
+$ tpm2_create -C primary_sh_scr.ctx -G ecc -u eckey.pub -r eckey.priv -L authorize+cc.policy -a "sensitivedataorigin|userwithauth|sign"
+$ tpm2_load -C primary_sh_scr.ctx -u eckey.pub -r eckey.priv -n eckey.name -c eckey.ctx
+
+# create a namehash policy
+$ tpm2_readpublic -c primary_sh_dest.ctx -n primary_sh_dest.name
+$ cat eckey.name primary_sh_dest.name | openssl dgst -sha256 -binary > name.hash
+$ tpm2_startauthsession -S session.ctx
+$ tpm2_policynamehash -S session.ctx -n name.hash -L namehash.policy
+$ tpm2_flushcontext session.ctx
+
+# authority sign the namehash policy
+$ openssl dgst -sha256 -sign authority_sk.pem -out namehash_policy.signature namehash.policy
+
+# satisfy the policy and duplicate the key
+$ tpm2_startauthsession -S session.ctx --policy-session
+$ tpm2_policynamehash -S session.ctx -n name.hash
+$ tpm2_verifysignature -c authority_key.ctx -g sha256 -m namehash.policy -s namehash_policy.signature -t namehash_policy.ticket -f rsassa
+$ tpm2_policyauthorize -S session.ctx -i namehash.policy -n authority_key.name -t namehash_policy.ticket
+$ tpm2_policycommandcode -S session.ctx TPM2_CC_Duplicate
+$ tpm2_duplicate -C primary_sh_dest.ctx -c eckey.ctx -G null -p session:session.ctx -r eckey_dup.priv -s eckey_dup.seed
+$ tpm2_flushcontext session.ctx
+
+# import the key to the destination parent
+$ tpm2_import -C primary_sh_dest.ctx -u eckey.pub -r eckey_imported.priv -i eckey_dup.priv -s eckey_dup.seed
+$ tpm2_load -C primary_sh_dest.ctx -u eckey.pub -r eckey_imported.priv -c eckey_imported.ctx
 ```
+
+<!-- Look for better examples... -->
+
+<!--
+TPM_CC_PCR_SetAuthPolicy not supported so skip this.
 
 Example, pcrevent:
 ```
 ```
+-->
 
 #### tpm2_policynv
 
