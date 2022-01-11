@@ -1788,10 +1788,10 @@ $ tpm2_flushcontext session.ctx
 
 #### tpm2_policyauthvalue
 
-Enables binding a policy to the authorization value of the authorized TPM object. Enables a policy that requires the object's authentication passphrase be provided. This is equivalent to authenticating using the object passphrase in plaintext or HMAC, only this enforces it as a policy:
+Enables binding a policy to the authorization value of the authorized TPM object. Enables a policy that requires the object's authentication passphrase be provided. This is equivalent to authenticating using the object passphrase in HMAC, only this enforces it as a policy:
 
 ```
-# create a policy
+# create the policy
 $ tpm2_startauthsession -S session.ctx
 $ tpm2_policyauthvalue -S session.ctx -L authvalue.policy
 $ tpm2_flushcontext session.ctx
@@ -2123,6 +2123,7 @@ Evaluates policy authorization by comparing a specified value against the conten
 
 <!-- It is an immediate assertion. The name of NV index is taken into the policy calculation, so the NV has to be initialized before trial policy session. -->
 
+Example using "eq":
 ```
 # define a special purpose NV
 # The value of this NV will be used for authorization
@@ -2191,6 +2192,27 @@ Logically OR's two policies together.
 #### tpm2_policypassword
 
 Enables binding a policy to the authorization value of the authorized TPM object. Enables a policy that requires the object's authentication passphrase be provided. This is equivalent to authenticating using the object passphrase in plaintext, only this enforces it as a policy.
+
+```
+# create the policy
+$ tpm2_startauthsession -S session.ctx
+$ tpm2_policypassword -S session.ctx -L authvalue.policy
+$ tpm2_flushcontext session.ctx
+
+# create a key safeguarded by the policy
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
+$ tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv -L authvalue.policy -a "fixedtpm|fixedparent|sensitivedataorigin|decrypt|sign" -p pass123
+$ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsakey.ctx
+
+$ echo "plaintext" > plain.txt
+
+# satisfy the policy and use the key for signing
+$ tpm2_startauthsession -S session.ctx --policy-session
+$ tpm2_policypassword -S session.ctx
+$ tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx+pass123
+$ tpm2_verifysignature -c rsakey.ctx -g sha256 -m plain.txt -s signature
+$ tpm2_flushcontext session.ctx
+```
 
 #### tpm2_policypcr
 
