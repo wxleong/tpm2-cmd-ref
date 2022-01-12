@@ -2267,6 +2267,40 @@ $ tpm2_flushcontext session.ctx
 
 Create a policy that includes specific PCR values.
 
+```
+# check if sha256 bank of pcr is enabled
+# if it is not, enable it using tpm2_pcrallocate
+$ tpm2_pcrread
+
+# create the pcr policy
+$ tpm2_pcrread "sha256:0,1,2,3" -o pcr.bin
+$ tpm2_startauthsession -S session.ctx
+$ tpm2_policypcr -S session.ctx -l "sha256:0,1,2,3" -f pcr.bin -L pcr.policy
+$ tpm2_flushcontext session.ctx
+
+# create a key safeguarded by the policy
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
+$ tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv -L pcr.policy -a "fixedtpm|fixedparent|sensitivedataorigin|decrypt|sign"
+$ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsakey.ctx
+
+$ echo "plaintext" > plain.txt
+
+# satisfy the policy and use the key for signing
+$ tpm2_startauthsession -S session.ctx --policy-session
+$ tpm2_policypcr -S session.ctx -l "sha256:0,1,2,3" -f pcr.bin
+$ tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx+pass123
+$ tpm2_verifysignature -c rsakey.ctx -g sha256 -m plain.txt -s signature
+$ tpm2_flushcontext session.ctx
+
+# change the value of pcr
+$ tpm2_pcrextend 1:sha256=beefcafebeefcafebeefcafebeefcafebeefcafebeefcafebeefcafebeefcafe
+
+# attempt to satisfy the policy, expected to fail
+$ tpm2_startauthsession -S session.ctx --policy-session
+$ tpm2_policypcr -S session.ctx -l "sha256:0,1,2,3" -f pcr.bin
+$ tpm2_flushcontext session.ctx
+```
+
 #### tpm2_policyrestart
 
 This is not a policy. This command allows a policy authorization session to be returned to its initial state.
