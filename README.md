@@ -2100,7 +2100,7 @@ $ tpm2_import -C primary_sh_dest.ctx -u eckey.pub -r eckey_imported.priv -i ecke
 $ tpm2_load -C primary_sh_dest.ctx -u eckey.pub -r eckey_imported.priv -c eckey_imported.ctx
 ```
 
-<!-- Look for better examples... -->
+<!-- Need better examples... -->
 
 <!--
 TPM_CC_PCR_SetAuthPolicy not supported so skip this.
@@ -2387,11 +2387,34 @@ $ tpm2_verifysignature -c rsakey.ctx -g sha256 -m plain.txt -s signature
 $ tpm2_flushcontext session.ctx
 ```
 
-<!-- look for better example -->
+<!-- Need better examples... -->
 
 #### tpm2_policytemplate
 
 Couples a policy with public template of an object.
+
+```
+# get the primary key template hash
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx --template-data primary_sh.template
+$ openssl dgst -sha256 -binary -out primary_sh.template.hash primary_sh.template
+
+# create the policy
+tpm2_startauthsession -S session.ctx
+tpm2_policytemplate -S session.ctx --template-hash primary_sh.template.hash -L template.policy
+tpm2_flushcontext session.ctx
+
+# set storage hierarchy policy
+$ tpm2_setprimarypolicy -C o -g sha256 -L template.policy
+
+# set storage hierarchy authValue
+$ tpm2_changeauth -c o ownerpswd
+
+# satisfy the policy and create primary key
+$ tpm2_startauthsession -S session.ctx --policy-session
+$ tpm2_policytemplate -S session.ctx --template-hash primary_sh.template.hash
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx -P session:session.ctx
+$ tpm2_flushcontext session.ctx
+```
 
 #### tpm2_policyticket
 
