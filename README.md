@@ -2358,16 +2358,24 @@ Enables policy authorization by verifying signature of optional TPM2 parameters.
 - cpHashA: digest of the command parameters for the command being approved using the hash algorithm of the policy session. Set to an Empty Digest if the authorization is not limited to a specific command.
 - policyRef: an opaque value determined by the authorizing entity. Set to the Empty Buffer if no value is present.
 
-Example with all qualifiers set to zero/empty buffer:
+Example with all qualifiers set to zero/empty buffer, a not so useful example:
 ```
 # create a signing authority
 $ openssl genrsa -out authority_sk.pem 2048
 $ openssl rsa -in authority_sk.pem -out authority_pk.pem -pubout
 $ tpm2_loadexternal -C o -G rsa -u authority_pk.pem -c authority_key.ctx -n authority_key.name
 
-# authority sign the digest of the authorization qualifiers
-# the computation for a hash if there are no restrictions
+# manually construct the authorization qualifiers
+# just zeros if there are no restrictions
 $ echo "00 00 00 00" | xxd -r -p > qualifiers.bin
+
+# use tool to construct the authorization qualifiers
+$ tpm2_startauthsession -S session.ctx
+$ tpm2_policysigned -S session.ctx -g sha256 -c authority_key.ctx --raw-data qualifiers.out.bin
+$ tpm2_flushcontext session.ctx
+$ diff qualifiers.bin qualifiers.out.bin
+
+# authority sign the digest of the authorization qualifiers
 $ openssl dgst -sha256 -sign authority_sk.pem -out qualifiers.signature qualifiers.bin
 
 # create the policy
@@ -2388,7 +2396,52 @@ $ tpm2_verifysignature -c rsakey.ctx -g sha256 -m plain.txt -s signature
 $ tpm2_flushcontext session.ctx
 ```
 
-<!-- Need better examples... -->
+Example with only expiration set:
+```
+# create a signing authority
+$ openssl genrsa -out authority_sk.pem 2048
+$ openssl rsa -in authority_sk.pem -out authority_pk.pem -pubout
+$ tpm2_loadexternal -C o -G rsa -u authority_pk.pem -c authority_key.ctx -n authority_key.name
+
+# get current time in milliseconds
+$ CURRENT_TIME=`tpm2_readclock | grep "time" | sed 's/.* //'`
+
+# set expiration after 60 seconds
+$ EXPIRE=$(($CURRENT_TIME/1000 + 60))
+
+# use tool to construct the authorization qualifiers
+$ tpm2_startauthsession -S session.ctx
+$ tpm2_policysigned -S session.ctx -g sha256 -c authority_key.ctx -t $EXPIRE --raw-data qualifiers.bin
+$ tpm2_flushcontext session.ctx
+
+# authority sign the digest of the authorization qualifiers
+$ openssl dgst -sha256 -sign authority_sk.pem -out qualifiers.signature qualifiers.bin
+
+# create the policy
+$ tpm2_startauthsession -S session.ctx
+$ tpm2_policysigned -S session.ctx -g sha256 -s qualifiers.signature -f rsassa -c authority_key.ctx -t $EXPIRE -L signed.policy
+$ tpm2_flushcontext session.ctx
+
+# create a key safeguarded by the policy
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
+$ tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv -p user123 -L signed.policy -a "fixedtpm|fixedparent|sensitivedataorigin|decrypt|sign"
+$ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsakey.ctx
+
+# satisfy the policy and use the key for signing
+$ tpm2_startauthsession -S session.ctx --policy-session
+$ tpm2_policysigned -S session.ctx -g sha256 -s qualifiers.signature -f rsassa -c authority_key.ctx -t $EXPIRE
+$ tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx
+$ tpm2_verifysignature -c rsakey.ctx -g sha256 -m plain.txt -s signature
+$ tpm2_flushcontext session.ctx
+
+# after 60 seconds, authorization will fail with error TPM_RC_EXPIRED (0x9A3)
+$ tpm2_startauthsession -S session.ctx --policy-session
+$ tpm2_policysigned -S session.ctx -g sha256 -s qualifiers.signature -f rsassa -c authority_key.ctx -t $EXPIRE
+$ tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx
+$ tpm2_flushcontext session.ctx
+```
+
+<!-- Need examples for other qualifiers... -->
 
 #### tpm2_policytemplate
 
