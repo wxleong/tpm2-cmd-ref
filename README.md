@@ -2382,7 +2382,7 @@ $ openssl dgst -sha256 -sign authority_sk.pem -out qualifiers.signature qualifie
 
 # create the policy
 $ tpm2_startauthsession -S session.ctx
-$ tpm2_policysigned -S session.ctx -g sha256 -s qualifiers.signature -f rsassa -c authority_key.ctx -L signed.policy
+$ tpm2_policysigned -S session.ctx -g sha256 -c authority_key.ctx -L signed.policy
 $ tpm2_flushcontext session.ctx
 
 # create a key safeguarded by the policy
@@ -2421,7 +2421,7 @@ $ openssl dgst -sha256 -sign authority_sk.pem -out qualifiers.signature qualifie
 
 # create the policy
 $ tpm2_startauthsession -S session.ctx
-$ tpm2_policysigned -S session.ctx -g sha256 -s qualifiers.signature -f rsassa -c authority_key.ctx -t $EXPIRE -L signed.policy
+$ tpm2_policysigned -S session.ctx -g sha256 -c authority_key.ctx -L signed.policy
 $ tpm2_flushcontext session.ctx
 
 # create a key safeguarded by the policy
@@ -2443,51 +2443,68 @@ $ tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx
 $ tpm2_flushcontext session.ctx
 ```
 
-<!--
-Example with nonceTPM and expiration set. The expiration is measured from the time that nonceTPM is generated:
+Example with both nonceTPM and expiration set. The expiration is measured from the time that nonceTPM is generated:
 ```
 # create a signing authority
-openssl genrsa -out authority_sk.pem 2048
-openssl rsa -in authority_sk.pem -out authority_pk.pem -pubout
-tpm2_loadexternal -C o -G rsa -u authority_pk.pem -c authority_key.ctx -n authority_key.name
-
-# set expiration after 10 seconds
-EXPIRE=10
-
-# start an auth session and keep it alive
-tpm2_startauthsession -S session.ctx --policy-session
-
-# use tool to construct the authorization qualifiers (nonTPM + expiration)
-tpm2_policysigned -S session.ctx -g sha256 -f rsassa  -c authority_key.ctx -t $EXPIRE -x --raw-data qualifiers.bin
-
-# authority sign the digest of the authorization qualifiers
-openssl dgst -sha256 -sign authority_sk.pem -out qualifiers.signature qualifiers.bin
+$ openssl genrsa -out authority_sk.pem 2048
+$ openssl rsa -in authority_sk.pem -out authority_pk.pem -pubout
+$ tpm2_loadexternal -C o -G rsa -u authority_pk.pem -c authority_key.ctx -n authority_key.name
 
 # create the policy
-tpm2_policysigned -S session.ctx -g sha256 -s qualifiers.signature -f rsassa -c authority_key.ctx -t $EXPIRE -x -L signed.policy
+$ tpm2_startauthsession -S session.ctx
+$ tpm2_policysigned -S session.ctx -g sha256 -c authority_key.ctx -L signed.policy
+$ tpm2_flushcontext session.ctx
 
 # create a key safeguarded by the policy
-tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
-tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv -L signed.policy -a "fixedtpm|fixedparent|sensitivedataorigin|decrypt|sign"
-tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsakey.ctx
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
+$ tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv -L signed.policy -a "fixedtpm|fixedparent|sensitivedataorigin|decrypt|sign"
+$ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsakey.ctx
 
-# restart the session, clear policy hash
-tpm2_policyrestart -S session.ctx
+# start an auth session and keep it alive
+$ tpm2_startauthsession -S session.ctx --policy-session
+
+# set expiration after 60 seconds
+$ EXPIRE=60
+
+# use tool to construct the authorization qualifiers (nonceTPM + expiration)
+$ tpm2_policysigned -S session.ctx -g sha256 -f rsassa  -c authority_key.ctx -t $EXPIRE -x --raw-data qualifiers.bin
+
+# authority sign the digest of the authorization qualifiers
+$ openssl dgst -sha256 -sign authority_sk.pem -out qualifiers.signature qualifiers.bin
 
 # satisfy the policy and use the key for signing
-# after 10 seconds from the time session is created (tpm2_startauthsession), authorization will fail with error TPM_RC_EXPIRED (0x9A3)
-tpm2_policysigned -S session.ctx -g sha256 -s qualifiers.signature -f rsassa -c authority_key.ctx -t $EXPIRE -x
-tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx
-tpm2_verifysignature -c rsakey.ctx -g sha256 -m plain.txt -s signature
+# after 60 seconds from the time session is created (tpm2_startauthsession), authorization will fail with error TPM_RC_EXPIRED (0x9A3)
+$ tpm2_policysigned -S session.ctx -g sha256 -s qualifiers.signature -f rsassa -c authority_key.ctx -t $EXPIRE -x
+$ tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx
+$ tpm2_verifysignature -c rsakey.ctx -g sha256 -m plain.txt -s signature
 
-# signature error is expected due to nonceTPM change. Each time the session is used for authorization nonceTPM will change
+# restart the session, clear policy hash
+$ tpm2_policyrestart -S session.ctx
+
+# error TPM_RC_SIGNATURE (0x5DB) is expected due to nonceTPM change. Each time the session is used for authorization nonceTPM will change
 # tpm2_policyrestart does not reset nonce
-tpm2_policyrestart -S session.ctx
-tpm2_policysigned -S session.ctx -g sha256 -s qualifiers.signature -f rsassa -c authority_key.ctx -t $EXPIRE -x 
+$ tpm2_policysigned -S session.ctx -g sha256 -s qualifiers.signature -f rsassa -c authority_key.ctx -t $EXPIRE -x 
 
-tpm2_flushcontext session.ctx
+# set expiration after 120 seconds
+$ EXPIRE=120
+
+# use tool to construct the authorization qualifiers (nonceTPM + expiration)
+$ tpm2_policysigned -S session.ctx -g sha256 -f rsassa  -c authority_key.ctx -t $EXPIRE -x --raw-data qualifiers.bin
+
+# authority sign the digest of the authorization qualifiers
+$ openssl dgst -sha256 -sign authority_sk.pem -out qualifiers.signature qualifiers.bin
+
+# restart the session, clear policy hash
+$ tpm2_policyrestart -S session.ctx
+
+# satisfy the policy and use the key for signing
+# after 120 seconds from the time session is created (tpm2_startauthsession), authorization will fail with error TPM_RC_EXPIRED (0x9A3)
+$ tpm2_policysigned -S session.ctx -g sha256 -s qualifiers.signature -f rsassa -c authority_key.ctx -t $EXPIRE -x
+$ tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx
+$ tpm2_verifysignature -c rsakey.ctx -g sha256 -m plain.txt -s signature
+
+$ tpm2_flushcontext session.ctx
 ```
--->
 
 <!-- Need examples for other qualifiers... -->
 
