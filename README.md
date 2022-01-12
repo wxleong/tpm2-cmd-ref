@@ -2366,6 +2366,7 @@ $ openssl rsa -in authority_sk.pem -out authority_pk.pem -pubout
 $ tpm2_loadexternal -C o -G rsa -u authority_pk.pem -c authority_key.ctx -n authority_key.name
 
 # authority sign the digest of the authorization qualifiers
+# the computation for a hash if there are no restrictions
 $ echo "00 00 00 00" | xxd -r -p > qualifiers.bin
 $ openssl dgst -sha256 -sign authority_sk.pem -out qualifiers.signature qualifiers.bin
 
