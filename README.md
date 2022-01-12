@@ -2303,7 +2303,9 @@ $ tpm2_flushcontext session.ctx
 
 #### tpm2_policyrestart
 
-This is not a policy. This command allows a policy authorization session to be returned to its initial state.
+This is not a policy. This command is used to reset the policy data without changing the nonce (nonceTPM/nonceCaller) or the start time of a session.
+
+<!-- TCG spec part4: 8.9.6.8 SessionResetPolicyData() -->
 
 You may restart the existing session:
 ```
@@ -2445,41 +2447,45 @@ $ tpm2_flushcontext session.ctx
 Example with nonceTPM and expiration set. The expiration is measured from the time that nonceTPM is generated:
 ```
 # create a signing authority
-$ openssl genrsa -out authority_sk.pem 2048
-$ openssl rsa -in authority_sk.pem -out authority_pk.pem -pubout
-$ tpm2_loadexternal -C o -G rsa -u authority_pk.pem -c authority_key.ctx -n authority_key.name
+openssl genrsa -out authority_sk.pem 2048
+openssl rsa -in authority_sk.pem -out authority_pk.pem -pubout
+tpm2_loadexternal -C o -G rsa -u authority_pk.pem -c authority_key.ctx -n authority_key.name
 
 # set expiration after 10 seconds
-$ EXPIRE=10
+EXPIRE=10
 
-# use tool to construct the authorization qualifiers
-$ tpm2_startauthsession -S session.ctx
-$ tpm2_policysigned -S session.ctx -g sha256 -c authority_key.ctx -t $EXPIRE -x --raw-data qualifiers.bin
-$ tpm2_flushcontext session.ctx
+# start an auth session and keep it alive
+tpm2_startauthsession -S session.ctx --policy-session
+
+# use tool to construct the authorization qualifiers (nonTPM + expiration)
+tpm2_policysigned -S session.ctx -g sha256 -f rsassa  -c authority_key.ctx -t $EXPIRE -x --raw-data qualifiers.bin
 
 # authority sign the digest of the authorization qualifiers
-$ openssl dgst -sha256 -sign authority_sk.pem -out qualifiers.signature qualifiers.bin
+openssl dgst -sha256 -sign authority_sk.pem -out qualifiers.signature qualifiers.bin
 
 # create the policy
-$ tpm2_startauthsession -S session.ctx
-$ tpm2_policysigned -S session.ctx -g sha256 -s qualifiers.signature -f rsassa -c authority_key.ctx -t $EXPIRE -x -L signed.policy
-$ tpm2_flushcontext session.ctx
+tpm2_policysigned -S session.ctx -g sha256 -s qualifiers.signature -f rsassa -c authority_key.ctx -t $EXPIRE -x -L signed.policy
 
 # create a key safeguarded by the policy
-$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
-$ tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv -L signed.policy -a "fixedtpm|fixedparent|sensitivedataorigin|decrypt|sign"
-$ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsakey.ctx
+tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
+tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv -L signed.policy -a "fixedtpm|fixedparent|sensitivedataorigin|decrypt|sign"
+tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsakey.ctx
+
+# restart the session, clear policy hash
+tpm2_policyrestart -S session.ctx
 
 # satisfy the policy and use the key for signing
-$ tpm2_startauthsession -S session.ctx --policy-session
-$ tpm2_policysigned -S session.ctx -g sha256 -s qualifiers.signature -f rsassa -c authority_key.ctx -t $EXPIRE -x
-$ tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx
-$ tpm2_verifysignature -c rsakey.ctx -g sha256 -m plain.txt -s signature
+# after 10 seconds from the time session is created (tpm2_startauthsession), authorization will fail with error TPM_RC_EXPIRED (0x9A3)
+tpm2_policysigned -S session.ctx -g sha256 -s qualifiers.signature -f rsassa -c authority_key.ctx -t $EXPIRE -x
+tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx
+tpm2_verifysignature -c rsakey.ctx -g sha256 -m plain.txt -s signature
 
-# keep the session open and wait for 10 seconds, authorization will fail with error TPM_RC_EXPIRED (0x9A3)
-$ tpm2_policysigned -S session.ctx -g sha256 -s qualifiers.signature -f rsassa -c authority_key.ctx -t $EXPIRE -x
-$ tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx
-$ tpm2_flushcontext session.ctx
+# signature error is expected due to nonceTPM change. Each time the session is used for authorization nonceTPM will change
+# tpm2_policyrestart does not reset nonce
+tpm2_policyrestart -S session.ctx
+tpm2_policysigned -S session.ctx -g sha256 -s qualifiers.signature -f rsassa -c authority_key.ctx -t $EXPIRE -x 
+
+tpm2_flushcontext session.ctx
 ```
 -->
 
