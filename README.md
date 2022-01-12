@@ -2339,7 +2339,7 @@ $ tpm2_flushcontext session.ctx
 
 # create a key safeguarded by the policy
 $ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
-$ tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv -p user123 -L secret.policy -a "fixedtpm|fixedparent|sensitivedataorigin|decrypt|sign"
+$ tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv -L secret.policy -a "fixedtpm|fixedparent|sensitivedataorigin|decrypt|sign"
 $ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsakey.ctx
 
 # satisfy the policy and use the key for signing
@@ -2385,7 +2385,7 @@ $ tpm2_flushcontext session.ctx
 
 # create a key safeguarded by the policy
 $ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
-$ tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv -p user123 -L signed.policy -a "fixedtpm|fixedparent|sensitivedataorigin|decrypt|sign"
+$ tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv -L signed.policy -a "fixedtpm|fixedparent|sensitivedataorigin|decrypt|sign"
 $ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsakey.ctx
 
 # satisfy the policy and use the key for signing
@@ -2396,7 +2396,7 @@ $ tpm2_verifysignature -c rsakey.ctx -g sha256 -m plain.txt -s signature
 $ tpm2_flushcontext session.ctx
 ```
 
-Example with only expiration set:
+Example with only expiration set. The expiration is based on TPM time:
 ```
 # create a signing authority
 $ openssl genrsa -out authority_sk.pem 2048
@@ -2424,7 +2424,7 @@ $ tpm2_flushcontext session.ctx
 
 # create a key safeguarded by the policy
 $ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
-$ tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv -p user123 -L signed.policy -a "fixedtpm|fixedparent|sensitivedataorigin|decrypt|sign"
+$ tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv -L signed.policy -a "fixedtpm|fixedparent|sensitivedataorigin|decrypt|sign"
 $ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsakey.ctx
 
 # satisfy the policy and use the key for signing
@@ -2440,6 +2440,48 @@ $ tpm2_policysigned -S session.ctx -g sha256 -s qualifiers.signature -f rsassa -
 $ tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx
 $ tpm2_flushcontext session.ctx
 ```
+
+<!--
+Example with nonceTPM and expiration set. The expiration is measured from the time that nonceTPM is generated:
+```
+# create a signing authority
+$ openssl genrsa -out authority_sk.pem 2048
+$ openssl rsa -in authority_sk.pem -out authority_pk.pem -pubout
+$ tpm2_loadexternal -C o -G rsa -u authority_pk.pem -c authority_key.ctx -n authority_key.name
+
+# set expiration after 10 seconds
+$ EXPIRE=10
+
+# use tool to construct the authorization qualifiers
+$ tpm2_startauthsession -S session.ctx
+$ tpm2_policysigned -S session.ctx -g sha256 -c authority_key.ctx -t $EXPIRE -x --raw-data qualifiers.bin
+$ tpm2_flushcontext session.ctx
+
+# authority sign the digest of the authorization qualifiers
+$ openssl dgst -sha256 -sign authority_sk.pem -out qualifiers.signature qualifiers.bin
+
+# create the policy
+$ tpm2_startauthsession -S session.ctx
+$ tpm2_policysigned -S session.ctx -g sha256 -s qualifiers.signature -f rsassa -c authority_key.ctx -t $EXPIRE -x -L signed.policy
+$ tpm2_flushcontext session.ctx
+
+# create a key safeguarded by the policy
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
+$ tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv -L signed.policy -a "fixedtpm|fixedparent|sensitivedataorigin|decrypt|sign"
+$ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsakey.ctx
+
+# satisfy the policy and use the key for signing
+$ tpm2_startauthsession -S session.ctx --policy-session
+$ tpm2_policysigned -S session.ctx -g sha256 -s qualifiers.signature -f rsassa -c authority_key.ctx -t $EXPIRE -x
+$ tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx
+$ tpm2_verifysignature -c rsakey.ctx -g sha256 -m plain.txt -s signature
+
+# keep the session open and wait for 10 seconds, authorization will fail with error TPM_RC_EXPIRED (0x9A3)
+$ tpm2_policysigned -S session.ctx -g sha256 -s qualifiers.signature -f rsassa -c authority_key.ctx -t $EXPIRE -x
+$ tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx
+$ tpm2_flushcontext session.ctx
+```
+-->
 
 <!-- Need examples for other qualifiers... -->
 
