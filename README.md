@@ -1529,6 +1529,12 @@ $ tpm2_checkquote -g sha256 -u rsakey.pem -q $QUALIFICATION -m quote.bin -s sign
 
 Visit [[13]](#13) to find a remote attestation implementation using TPM quote.
 
+<!--
+to-do: tpm2_eventlog + tpm2_checkquote with eventlog input.
+
+eventlog syntax check TCG spec: PC Client Platform Firmware Profile, 10 Event Logging
+-->
+
 ## Read EK Certificate
 
 This section only work on hardware TPM.
