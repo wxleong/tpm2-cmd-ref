@@ -2891,6 +2891,8 @@ To change the endorsement primary seed (EPS) to a new value from the TPM's rando
 $ tpm2_changeeps
 ```
 
+<!-- to-do: tpm2_clearcontrol -->
+
 # References
 
 <a id="1">[1] https://www.infineon.com/cms/en/product/security-smart-card-solutions/optiga-embedded-security-solutions/optiga-tpm/</a><br>
