@@ -2339,9 +2339,9 @@ $ tpm2_flushcontext session.ctx
 Couples the authorization of an object to that of an existing object.
 
 <!--
-contain a special feature where you can set/get time when authorization will expire, this is unique to policySecret only, but not implemented in tpm2-tools...
+contain a special feature where you can set/get policy expiration time.
 -->
-
+A simple example:
 ```
 # define a special purpose NV
 # The authValue of this NV will be used on another entity
@@ -2365,6 +2365,52 @@ $ tpm2_policysecret -S session.ctx -c 0x01000000 admin123
 $ tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx
 $ tpm2_verifysignature -c rsakey.ctx -g sha256 -m plain.txt -s signature
 $ tpm2_flushcontext session.ctx
+
+$ tpm2_nvundefine 0x01000000 -C o
+```
+
+An example using expiration. The expiration is based on TPM time:
+<!-- the advantage of using ticket for authorization is, no need to reveal the NV authValue to user. You can have an authority to issue time controlled ticket to users. -->
+```
+# define a special purpose NV
+# The authValue of this NV will be used on another entity
+$ tpm2_nvdefine 0x01000000 -C o -a "authread|authwrite" -s 1 -p admin123
+$ tpm2_nvreadpublic 0x01000000 | grep "name" | sed 's/.* //' | xxd -p -r > authority.name
+
+# get current time in milliseconds
+$ CURRENT_TIME=`tpm2_readclock | grep "time" | sed 's/.* //'`
+
+# set expiration after 60 seconds
+$ EXPIRE=$(($CURRENT_TIME/1000 + 60))
+
+# create a secret policy to use authValue of another entity
+# meanwhile, create a ticket
+tpm2_startauthsession -S session.ctx --policy-session
+tpm2_policysecret -S session.ctx -c 0x01000000 -t $EXPIRE --ticket ticket.bin --timeout timeout.bin -L secret.policy admin123
+tpm2_flushcontext session.ctx
+
+# create a key safeguarded by the policy
+tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv -L secret.policy -a "fixedtpm|fixedparent|sensitivedataorigin|decrypt|sign"
+tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsakey.ctx
+
+echo "plaintext" > plain.txt
+
+# satisfy the policy using the ticket and use the key for signing
+# after 60 seconds, authorization will fail with error TPM_RC_EXPIRED
+tpm2_startauthsession -S session.ctx --policy-session
+tpm2_policyticket -S session.ctx -n authority.name --ticket ticket.bin --timeout timeout.bin
+tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx
+tpm2_verifysignature -c rsakey.ctx -g sha256 -m plain.txt -s signature
+tpm2_flushcontext session.ctx
+
+# satisfy the policy using the NV authValue and use the key for signing
+tpm2_startauthsession -S session.ctx --policy-session
+tpm2_policysecret -S session.ctx -c 0x01000000 admin123
+tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx
+tpm2_verifysignature -c rsakey.ctx -g sha256 -m plain.txt -s signature
+tpm2_flushcontext session.ctx
+
+tpm2_nvundefine 0x01000000 -C o
 ```
 
 #### tpm2_policysigned
@@ -2455,7 +2501,7 @@ $ tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx
 $ tpm2_verifysignature -c rsakey.ctx -g sha256 -m plain.txt -s signature
 $ tpm2_flushcontext session.ctx
 
-# after 60 seconds, authorization will fail with error TPM_RC_EXPIRED (0x9A3)
+# after 60 seconds, authorization will fail with error TPM_RC_EXPIRED
 $ tpm2_startauthsession -S session.ctx --policy-session
 $ tpm2_policysigned -S session.ctx -g sha256 -s qualifiers.signature -f rsassa -c authority_key.ctx -t $EXPIRE
 $ tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx
@@ -2494,7 +2540,7 @@ $ openssl dgst -sha256 -sign authority_sk.pem -out qualifiers.signature qualifie
 $ echo "plaintext" > plain.txt
 
 # satisfy the policy and use the key for signing
-# after 60 seconds from the time session is created (tpm2_startauthsession), authorization will fail with error TPM_RC_EXPIRED (0x9A3)
+# after 60 seconds from the time session is created (tpm2_startauthsession), authorization will fail with error TPM_RC_EXPIRED
 $ tpm2_policysigned -S session.ctx -g sha256 -s qualifiers.signature -f rsassa -c authority_key.ctx -t $EXPIRE -x
 $ tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx
 $ tpm2_verifysignature -c rsakey.ctx -g sha256 -m plain.txt -s signature
@@ -2519,7 +2565,7 @@ $ openssl dgst -sha256 -sign authority_sk.pem -out qualifiers.signature qualifie
 $ tpm2_policyrestart -S session.ctx
 
 # satisfy the policy and use the key for signing
-# after 120 seconds from the time session is created (tpm2_startauthsession), authorization will fail with error TPM_RC_EXPIRED (0x9A3)
+# after 120 seconds from the time session is created (tpm2_startauthsession), authorization will fail with error TPM_RC_EXPIRED
 $ tpm2_policysigned -S session.ctx -g sha256 -s qualifiers.signature -f rsassa -c authority_key.ctx -t $EXPIRE -x
 $ tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx
 $ tpm2_verifysignature -c rsakey.ctx -g sha256 -m plain.txt -s signature
@@ -2600,7 +2646,7 @@ $ tpm2_flushcontext session.ctx
 $ echo "plaintext" > plain.txt
 
 # satisfy the policy using the ticket and use the key for signing
-# after 60 seconds, authorization will fail with error TPM_RC_EXPIRED (0x9A3)
+# after 60 seconds, authorization will fail with error TPM_RC_EXPIRED
 $ tpm2_startauthsession -S session.ctx --policy-session
 $ tpm2_policyticket -S session.ctx -n authority_key.name --ticket ticket.bin --timeout timeout.bin
 $ tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx
@@ -2608,6 +2654,14 @@ $ tpm2_flushcontext session.ctx
 ```
 
 <!-- what is the advantage of using policyticket?? -->
+<!-- Both TPM2_PolicySigned() and TPM2_PolicySecret() can produce tickets that enable authorizations to be used and reused over a period of time and in different policy sessions. -->
+<!-- a ticket can be used to authorize access on entity safeguarded by TPM2_PolicySigned/TPM2_PolicySecret with same the authority using TPM2_PolicyTicket -->
+<!-- TPM2_PolicySigned uses an authority signature for verification, TPM2_PolicySecret uses an authority authValue for verification -->
+
+An example showing shared ticket use:
+```
+
+```
 
 ## Set Hierarchy Auth Value
 
