@@ -2594,6 +2594,8 @@ $ tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx
 $ tpm2_flushcontext session.ctx
 ```
 
+<!-- what is the advantage of using policyticket?? -->
+
 ## Set Hierarchy Auth Value
 
 Set storage hierarchy auth:
