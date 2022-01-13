@@ -1484,7 +1484,20 @@ Please refer to [[7]](#7).
 
 ## Quote
 
-to-do
+A simple example:
+```
+# create key
+tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
+tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv
+tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsakey.ctx
+
+# generate quote
+PCR="sha256:0,1"
+QUALIFICATION=`tpm2_getrandom 8 --hex`
+tpm2_quote -c rsakey.ctx -q $QUALIFICATION -l $PCR -m quote.bin -s signature.bin
+```
+
+Visit [[13]] to find a remote attestation implementation using TPM quote.
 
 ## Read EK Certificate
 
@@ -2739,6 +2752,7 @@ $ tpm2_changeeps
 <a id="10">[10] https://www.infineon.com/cms/en/product/evaluation-boards/iridium9670-tpm2.0-linux/</a><br>
 <a id="11">[11] https://github.com/tpm2-software/tpm2-tss/blob/master/src/tss2-tcti/tcti-device.c#L371</a><br>
 <a id="12">[12] https://github.com/tpm2-software/tpm2-tools/commit/7b6600d3214dd45531bdb53d5f2510404c31fd6b#diff-b7ca48acb8f12449d165509c68d04600fac53b56bfc4c43462908815b9602def</a><br>
+<a id="13">[13] https://github.com/Infineon/remote-attestation-optiga-tpm</a><br>
 
 # License
 
