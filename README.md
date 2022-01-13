@@ -1489,14 +1489,18 @@ Please refer to [[7]](#7).
 A simple example:
 ```
 # create key
-tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
-tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv
-tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsakey.ctx
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
+$ tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv
+$ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsakey.ctx
+$ tpm2_readpublic -c rsakey.ctx -f pem -o rsakey.pem
 
 # generate quote
-PCR="sha256:0,1"
-QUALIFICATION=`tpm2_getrandom 8 --hex`
-tpm2_quote -c rsakey.ctx -q $QUALIFICATION -l $PCR -m quote.bin -s signature.bin
+$ PCR="sha256:0,1"
+$ QUALIFICATION=`tpm2_getrandom 8 --hex`
+$ tpm2_quote -g sha256 -c rsakey.ctx -q $QUALIFICATION -l $PCR -m quote.bin -s signature.bin -o pcrs.bin
+
+# validate the quote
+$ tpm2_checkquote -g sha256 -u rsakey.pem -q $QUALIFICATION -m quote.bin -s signature.bin -f pcrs.bin
 ```
 
 Visit [[13]](#13) to find a remote attestation implementation using TPM quote.
