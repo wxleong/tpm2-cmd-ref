@@ -1527,13 +1527,40 @@ $ tpm2_quote -g sha256 -c rsakey.ctx -q $QUALIFICATION -l $PCR -m quote.bin -s s
 $ tpm2_checkquote -g sha256 -u rsakey.pem -q $QUALIFICATION -m quote.bin -s signature.bin -f pcrs.bin
 ```
 
-Visit [[13]](#13) to find a remote attestation implementation using TPM quote.
-
+Example using an event log:
 <!--
-to-do: tpm2_eventlog + tpm2_checkquote with eventlog input.
-
 eventlog syntax check TCG spec: PC Client Platform Firmware Profile, 10 Event Logging
 -->
+```
+# soft/hard reset the TPM to clear pcr index 0
+# power cycle the TPM or press the reset button on the TPM board before executing the following command
+$ tpm2_startup -c
+
+# create key
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
+$ tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv
+$ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsakey.ctx
+$ tpm2_readpublic -c rsakey.ctx -f pem -o rsakey.pem
+
+# make a copy of the sample event log
+$ cp ~/tpm2-tools/test/integration/fixtures/event.bin ./event.bin
+
+# read the event log
+$ tpm2_eventlog event.bin
+
+# extend the log EventNum 2 digest to the specified pcr
+$ tpm2_pcrextend 0:sha256=660375b3c94d47f04e30912dd931b28532d313271d1ae1bdead0a1b8f1276ed1
+
+# generate quote
+$ PCR="sha256:0"
+$ QUALIFICATION=`tpm2_getrandom 8 --hex`
+$ tpm2_quote -g sha256 -c rsakey.ctx -q $QUALIFICATION -l $PCR -m quote.bin -s signature.bin -o pcrs.bin
+
+# validate the quote
+$ tpm2_checkquote -g sha256 -u rsakey.pem -q $QUALIFICATION -m quote.bin -s signature.bin -f pcrs.bin -e event.bin
+```
+
+Visit [[13]](#13) to find a remote attestation implementation using TPM quote.
 
 ## Read EK Certificate
 
