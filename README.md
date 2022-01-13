@@ -2563,9 +2563,9 @@ This command is similar to tpm2_policysigned except that it takes a ticket inste
 Example with only expiration set. The expiration is based on TPM time:
 ```
 # create a signing authority
-openssl genrsa -out authority_sk.pem 2048
-openssl rsa -in authority_sk.pem -out authority_pk.pem -pubout
-tpm2_loadexternal -C o -G rsa -u authority_pk.pem -c authority_key.ctx -n authority_key.name
+$ openssl genrsa -out authority_sk.pem 2048
+$ openssl rsa -in authority_sk.pem -out authority_pk.pem -pubout
+$ tpm2_loadexternal -C o -G rsa -u authority_pk.pem -c authority_key.ctx -n authority_key.name
 
 # create the policy
 $ tpm2_startauthsession -S session.ctx
@@ -2585,17 +2585,17 @@ $ CURRENT_TIME=`tpm2_readclock | grep "time" | sed 's/.* //'`
 $ EXPIRE=-$(($CURRENT_TIME/1000 + 60))
 
 # use tool to construct the authorization qualifiers
-tpm2_startauthsession -S session.ctx
-tpm2_policysigned -S session.ctx -g sha256 -f rsassa -c authority_key.ctx -t $EXPIRE --raw-data qualifiers.bin
-tpm2_flushcontext session.ctx
+$ tpm2_startauthsession -S session.ctx
+$ tpm2_policysigned -S session.ctx -g sha256 -f rsassa -c authority_key.ctx -t $EXPIRE --raw-data qualifiers.bin
+$ tpm2_flushcontext session.ctx
 
 # authority sign the digest of the authorization qualifiers
-openssl dgst -sha256 -sign authority_sk.pem -out qualifiers.signature qualifiers.bin
+$ openssl dgst -sha256 -sign authority_sk.pem -out qualifiers.signature qualifiers.bin
 
 # get a ticket from the TPM
-tpm2_startauthsession -S session.ctx --policy-session
-tpm2_policysigned -S session.ctx -g sha256 -s qualifiers.signature -f rsassa -c authority_key.ctx -t $EXPIRE --ticket ticket.bin --timeout timeout.bin
-tpm2_flushcontext session.ctx
+$ tpm2_startauthsession -S session.ctx --policy-session
+$ tpm2_policysigned -S session.ctx -g sha256 -s qualifiers.signature -f rsassa -c authority_key.ctx -t $EXPIRE --ticket ticket.bin --timeout timeout.bin
+$ tpm2_flushcontext session.ctx
 
 $ echo "plaintext" > plain.txt
 
