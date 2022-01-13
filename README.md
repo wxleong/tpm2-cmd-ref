@@ -1499,7 +1499,7 @@ QUALIFICATION=`tpm2_getrandom 8 --hex`
 tpm2_quote -c rsakey.ctx -q $QUALIFICATION -l $PCR -m quote.bin -s signature.bin
 ```
 
-Visit [[13]] to find a remote attestation implementation using TPM quote.
+Visit [[13]](#13) to find a remote attestation implementation using TPM quote.
 
 ## Read EK Certificate
 
