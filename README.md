@@ -1532,7 +1532,7 @@ Example using an event log:
 eventlog syntax check TCG spec: PC Client Platform Firmware Profile, 10 Event Logging
 -->
 ```
-# soft/hard reset the TPM to clear pcr index 0
+# cold/warm reset the TPM to clear pcr index 0
 # power cycle the TPM or press the reset button on the TPM board before executing the following command
 $ tpm2_startup -c
 
