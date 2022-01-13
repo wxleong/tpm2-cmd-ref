@@ -41,6 +41,7 @@ OPTIGA™ TPM 2.0 command reference and code examples.
     - **[PKCS #11](#pkcs-11)**
     - **[Quote](#quote)**
 	- **[Read EK Certificate](#read-ek-certificate)**
+    - **[Read Public](#read-public)**
     - **[Seal](#seal)**
     - **[Secure Key Transfer (Duplicate Key)](#secure-key-transfer-duplicate-key)**
         - **[Without Credential Protection](#without-credential-protection)**
@@ -1525,6 +1526,38 @@ $ openssl x509 -inform der -in ecc_ek.crt.der -text
 Read RSA & ECC endorsement key certificates using tpm2-tools:
 ```
 $ tpm2_getekcertificate -o rsa_ek.crt.der -o ecc_ek.crt.der
+```
+
+## Read Public
+
+Print the public component of a key:
+```
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
+$ tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv
+$ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsakey.ctx
+$ tpm2_readpublic -c rsakey.ctx
+```
+
+Output the name and the public key in PEM format:
+```
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
+$ tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv
+$ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsakey.ctx
+$ tpm2_readpublic -c rsakey.ctx -n rsakey.name -f pem -o rsakey.pub.pem
+```
+
+Print the public component of an NV index:
+```
+$ tpm2_nvdefine 0x01000000 -C o -s 32 -a "ownerwrite|ownerread"
+$ tpm2_nvreadpublic 0x01000000
+$ tpm2_nvundefine 0x01000000 -C o
+```
+
+Output the name of an NV index:
+```
+$ tpm2_nvdefine 0x01000000 -C o -s 32 -a "ownerwrite|ownerread"
+$ tpm2_nvreadpublic 0x01000000 | grep "name" | sed 's/.* //' | xxd -p -r > nv_0x01000000.name
+$ tpm2_nvundefine 0x01000000 -C o
 ```
 
 ## Seal
