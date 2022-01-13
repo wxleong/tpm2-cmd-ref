@@ -2115,7 +2115,7 @@ $ tpm2_import -C primary_sh_dest.ctx -u eckey.pub -r eckey_imported.priv -i ecke
 $ tpm2_load -C primary_sh_dest.ctx -u eckey.pub -r eckey_imported.priv -c eckey_imported.ctx
 ```
 
-<!-- to-do: need better examples, since tpm2_policyduplicationselect can reach the same goal here, why tpm2_policynamehash?? -->
+<!-- to-do: need better examples, how is it different from tpm2_policyduplicationselect? -->
 
 <!--
 TPM_CC_PCR_SetAuthPolicy not supported so skip this.
