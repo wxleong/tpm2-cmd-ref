@@ -901,6 +901,8 @@ $ tpm2_loadexternal -C o -G rsa -u rsa_public.pem -c rsakey_imported.ctx
 
 ## NV Storage
 
+<!-- to-do: platform NV -->
+
 NV define, write, and read:
 ```
 $ dd bs=1 count=32 </dev/urandom >data
@@ -2113,7 +2115,7 @@ $ tpm2_import -C primary_sh_dest.ctx -u eckey.pub -r eckey_imported.priv -i ecke
 $ tpm2_load -C primary_sh_dest.ctx -u eckey.pub -r eckey_imported.priv -c eckey_imported.ctx
 ```
 
-<!-- Need better examples... -->
+<!-- to-do: need better examples, since tpm2_policyduplicationselect can reach the same goal here, why tpm2_policynamehash?? -->
 
 <!--
 TPM_CC_PCR_SetAuthPolicy not supported so skip this.
@@ -2529,7 +2531,7 @@ $ tpm2_verifysignature -c rsakey.ctx -g sha256 -m plain.txt -s signature
 $ tpm2_flushcontext session.ctx
 ```
 
-<!-- Need examples for other qualifiers... -->
+<!-- to-do: need examples for other qualifiers... -->
 
 #### tpm2_policytemplate
 
@@ -2566,7 +2568,7 @@ This command is similar to tpm2_policysigned except that it takes a ticket inste
 <!-- TPM2_PolicySigned uses an authority generated signature for verification, TPM2_PolicySecret uses an authority's authValue for verification -->
 
 Example using tpm2_policysigned's ticket with only expiration set. The expiration is based on TPM time:
-<!-- what is the advantage of using tpm2_policyticket instead of tpm2_policysigned here??-->
+<!-- to-do: what is the advantage of using tpm2_policyticket instead of tpm2_policysigned here??-->
 ```
 # create a signing authority
 $ openssl genrsa -out authority_sk.pem 2048
@@ -2806,7 +2808,7 @@ $ tpm2_changeeps
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-# To-do
 
-- NV platform/storage, ...
-- Policies
+# To-dos
+
+Look for `to-do` in the raw format.
