@@ -2995,7 +2995,7 @@ To change the endorsement primary seed (EPS) to a new value from the TPM's rando
 
 # Testing Framework
 
-Parses the README.md file and execute all lines that begin with `$ ` sequentially. Only works with hardware TPM:
+Parses the README.md file and execute all lines that begin with `$ ` sequentially (check the raw format, some commands are hidden). Only works with hardware TPM:
 
 ```
 # Commands extraction
