@@ -2978,9 +2978,10 @@ Parse the README.md file and execute all lines that begin with `$ ` sequentially
 % export TPM2TOOLS_TCTI="device:/dev/tpmrm0"
 
 # Commands extraction
-% echo '#!/bin/bash' > robot.sh
-% echo 'set -e' >> robot.sh
-% cat README.md | grep '\(^$ \|^% \|^# [a-z]\)' | sed 's/^# /\n# /' | sed 's/^% /# % /' | sed 's/$ //' | sed 's/<--.*//' >> robot.sh
+% cd ~/tpm2-cmd-ref
+% echo '#!/bin/bash' > test/robot.sh
+% echo 'set -e' >> test/robot.sh
+% cat README.md | grep '\(^$ \|^% \|^# [a-z]\)' | sed 's/^# /\n# /' | sed 's/^% /# % /' | sed 's/$ //' | sed 's/<--.*//' >> test/robot.sh
 
 # Execute script
 % chmod a+x robot.sh
