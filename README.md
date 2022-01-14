@@ -471,7 +471,7 @@ $ tpm2_readclock
 $ CURRENT_CLOCK=`tpm2_readclock | grep 'clock:' | sed 's/.* //'`
 
 # set to 10 seconds in the future
-$ FUTURE=$(($CURRENT_TIME + 10000))
+$ FUTURE=$(($CURRENT_CLOCK + 10000))
 
 # set the clock
 $ tpm2_setclock $FUTURE
