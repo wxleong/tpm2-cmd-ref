@@ -2681,7 +2681,7 @@ $ tpm2_policyrestart -S session.ctx
 
 # error TPM_RC_SIGNATURE (0x5DB) is expected due to nonceTPM change. Each time the session is used for authorization nonceTPM will change
 # tpm2_policyrestart does not reset nonce
-$ tpm2_policysigned -S session.ctx -g sha256 -s qualifiers.signature -f rsassa -c authority_key.ctx -t $EXPIRE -x 
+% tpm2_policysigned -S session.ctx -g sha256 -s qualifiers.signature -f rsassa -c authority_key.ctx -t $EXPIRE -x
 
 # set expiration after 120 seconds
 $ EXPIRE=120
@@ -2993,6 +2993,10 @@ Parse the README.md file and execute all lines that begin with `$ ` sequentially
 % cd ~/tpm2-cmd-ref
 % echo '#!/bin/bash' > test/robot.sh
 % echo 'set -e' >> test/robot.sh
+% echo 'set -x' >> test/robot.sh
+% echo 'echo "press the reset button on TPM board, then enter any key to continue..."' >> test/robot.sh
+% echo 'read input' >> test/robot.sh
+% echo 'tpm2_startup -c' >> test/robot.sh
 % echo 'set -x' >> test/robot.sh
 % cat README.md | grep '\(^$ \|^% \|^# [a-z]\)' | sed 's/^# /\n# /' | sed 's/^% /# % /' | sed 's/$ //' | sed 's/<--.*//' >> test/robot.sh
 
