@@ -5,8 +5,8 @@ OPTIGA™ TPM 2.0 command reference and code examples.
 # Table of Contents
 
 - **[Prerequisites](#prerequisites)**
-- **[Setup](#setup)**
-- **[Using Hardware TPM](#using-hardware-tpm)**
+- **[Setup on Ubuntu](#setup-on-ubuntu)**
+- **[Setup on Raspberry Pi](#setup-on-raspberry-pi)**
 - **[Behaviour of Microsoft TPM2.0 Simulator](#behaviour-of-microsoft-tpm20-simulator)**
 - **[Examples](#examples)**
     - **[Audit](#audit)**
@@ -92,9 +92,9 @@ OPTIGA™ TPM 2.0 command reference and code examples.
   % uname -a
   Linux ubuntu 5.8.0-59-generic #66~20.04.1-Ubuntu SMP Thu Jun 17 11:14:10 UTC 2021 x86_64 x86_64 x86_64 GNU/Linux
   ```
-- For hardware TPM 2.0, tested on Raspberry Pi 4 Model B with Iridium 9670 TPM 2.0 board [[10]](#10). For more details please visit [[8]](#8).
+- For hardware TPM 2.0, tested on Raspberry Pi 4 Model B with Iridium 9670 TPM 2.0 board [[10]](#10). For detailed setup guide please visit [[8]](#8).
 
-# Setup
+# Setup on Ubuntu
 
 Download package information:
 ```
@@ -216,9 +216,11 @@ Test installation:
     % tpm2_getrandom --hex 16
     ```
 
-# Using Hardware TPM
+# Setup on Raspberry Pi
 
-If you have hardware TPM enabled on your Linux platform (e.g., Raspberry Pi 4), set the TCTI to device node `tpm0` or `tpmrm0`:
+For detailed Raspberry Pi setup guide please visit [[8]](#8).
+
+You may explicitly set the TCTI to device node `tpm0` or `tpmrm0`:
 ```
 $ export TPM2TOOLS_TCTI="device:/dev/tpmrm0"
 $ export TPM2TSSENGINE_TCTI="device:/dev/tpmrm0"
@@ -227,6 +229,11 @@ $ export TPM2TSSENGINE_TCTI="device:/dev/tpmrm0"
 
 % export TPM2TOOLS_TCTI="device:/dev/tpm0"
 % export TPM2TSSENGINE_TCTI="device:/dev/tpm0"
+```
+
+Test installation:
+```
+% tpm2_getrandom --hex 16
 ```
 
 # Behaviour of Microsoft TPM2.0 Simulator
