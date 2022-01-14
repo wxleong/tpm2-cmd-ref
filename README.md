@@ -836,14 +836,14 @@ $ diff secret.decipher secret.clear
 
 <!--
 
-Using AES key:
-```
-$ echo "some secret" > secret.clear
-$ tpm2_getrandom 16 > iv
-$ tpm2_encryptdecrypt -c aeskey.ctx -t iv -o secret.cipher secret.clear
-$ tpm2_encryptdecrypt -d -c aeskey.ctx -t iv -o secret.decipher secret.cipher
-$ diff secret.decipher secret.clear
-```
+    Using AES key:
+    ```
+    $ echo "some secret" > secret.clear
+    $ tpm2_getrandom 16 > iv
+    $ tpm2_encryptdecrypt -c aeskey.ctx -t iv -o secret.cipher secret.clear
+    $ tpm2_encryptdecrypt -d -c aeskey.ctx -t iv -o secret.decipher secret.cipher
+    $ diff secret.decipher secret.clear
+    ```
 
 -->
 
