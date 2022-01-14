@@ -186,7 +186,7 @@ int main(int argc, char **argv)
         goto err1;
     }
     
-    parentHandle = strtol(argv[1], NULL, 16);
+    parentHandle = strtoul(argv[1], NULL, 16);
     keyPubPath = argv[2];
     keyPrivPath = argv[3];
     outPath = argv[4];
