@@ -2731,6 +2731,8 @@ $ tpm2_startauthsession -S session.ctx --policy-session
 $ tpm2_policytemplate -S session.ctx --template-hash primary_sh.template.hash
 $ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx -P session:session.ctx
 $ tpm2_flushcontext session.ctx
+
+$ tpm2_clear -c p
 ```
 
 #### tpm2_policyticket
