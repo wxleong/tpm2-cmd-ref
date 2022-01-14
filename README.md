@@ -3007,11 +3007,11 @@ Parses the README.md file and execute all lines that begin with `$ ` sequentiall
 % echo 'read input' >> test/robot.sh
 % cat README.md | grep '\(^$ \|^% \|^# [a-z]\)' | sed 's/^# /\n# /' | sed 's/^% /# % /' | sed 's/$ //' | sed 's/<--.*//' >> test/robot.sh
 
-# Execute script
+# Execute script (approx. 6m)
+% tpm2_clear -c p
 % cd test
 % chmod a+x robot.sh
-% tpm2_clear -c p
-% ./robot.sh
+% time ./robot.sh
 ```
 
 # References
