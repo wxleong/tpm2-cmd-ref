@@ -754,6 +754,10 @@ Decryption:
 ```
 $ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
 
+# create RSA key
+$ tpm2_create -C primary_sh.ctx -g sha256 -G rsa -u rsakey.pub -r rsakey.priv
+$ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -c rsakey.ctx
+
 $ echo "some secret" > secret.clear
 $ tpm2_rsaencrypt -c rsakey.ctx -o secret.cipher secret.clear
 
@@ -765,6 +769,10 @@ $ tpm2_flushcontext session.ctx
 Sign:
 ```
 $ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
+
+# create RSA key
+$ tpm2_create -C primary_sh.ctx -g sha256 -G rsa -u rsakey.pub -r rsakey.priv
+$ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -c rsakey.ctx
 
 $ echo "some message" > message
 
@@ -778,6 +786,9 @@ $ tpm2_verifysignature -c rsakey.ctx -g sha256 -m message -s signature
 HMAC:
 ```
 $ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
+
+# create HMAC key
+$ tpm2_create -C primary_sh.ctx -G hmac -c hmackey.ctx
 
 $ echo "some message" > message
 
@@ -805,6 +816,11 @@ $ tpm2_nvundefine 0x01000000 -C o
 
 Using RSA key:
 ```
+# create RSA key
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
+$ tpm2_create -C primary_sh.ctx -g sha256 -G rsa -u rsakey.pub -r rsakey.priv
+$ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -c rsakey.ctx
+
 $ echo "some secret" > secret.clear
 $ tpm2_rsaencrypt -c rsakey.ctx -o secret.cipher secret.clear
 $ tpm2_rsadecrypt -c rsakey.ctx -o secret.decipher secret.cipher
@@ -2978,11 +2994,13 @@ Parse the README.md file and execute all lines that begin with `$ ` sequentially
 % cd ~/tpm2-cmd-ref
 % echo '#!/bin/bash' > test/robot.sh
 % echo 'set -e' >> test/robot.sh
+% echo 'set -x' >> test/robot.sh
 % cat README.md | grep '\(^$ \|^% \|^# [a-z]\)' | sed 's/^# /\n# /' | sed 's/^% /# % /' | sed 's/$ //' | sed 's/<--.*//' >> test/robot.sh
 
 # Execute script
 % cd test
 % chmod a+x robot.sh
+% tpm2_clear -c p
 % ./robot.sh
 ```
 
