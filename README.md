@@ -2802,7 +2802,7 @@ $ tpm2_nvreadpublic 0x01000000 | grep 'name' | sed 's/.* //' | xxd -p -r > autho
 $ CURRENT_TIME=`tpm2_readclock | grep 'time' | sed 's/.* //'`
 
 # set expiration after 60 seconds
-$ EXPIRE=$(($CURRENT_TIME/1000 + 60))
+$ EXPIRE=-$(($CURRENT_TIME/1000 + 60))
 
 # create a secret policy to use authValue of another entity
 # meanwhile, create a ticket
@@ -2811,6 +2811,7 @@ $ tpm2_policysecret -S session.ctx -c 0x01000000 -t $EXPIRE --ticket ticket.bin 
 $ tpm2_flushcontext session.ctx
 
 # create a key safeguarded by the policy
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx --template-data primary_sh.template
 $ tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv -L secret.policy -a "fixedtpm|fixedparent|sensitivedataorigin|decrypt|sign"
 $ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsakey.ctx
 
