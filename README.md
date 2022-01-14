@@ -127,12 +127,6 @@ Install dependencies:
   pandoc
 ```
 
-Download this repo:
-```
-% git clone https://github.com/wxleong/tpm2-cmd-ref
-% git checkout develop-genesis
-```
-
 Install tpm2-tss:
 ```
 % git clone https://github.com/tpm2-software/tpm2-tss ~/tpm2-tss
@@ -3004,8 +2998,14 @@ To change the endorsement primary seed (EPS) to a new value from the TPM's rando
 
 **Only works on Raspberry Pi.**
 
-Parses the README.md file and execute all lines that begin with `$ ` sequentially (check the raw format, some commands are hidden).
+Download the repo:
+```
+% git clone https://github.com/wxleong/tpm2-cmd-ref ~/tpm2-cmd-ref
+% cd ~/tpm2-cmd-ref
+% git checkout develop-genesis
+```
 
+Parses the README.md file to execute all lines that begin with `$ ` sequentially (check the raw format, some commands are hidden):
 ```
 # Commands extraction
 % cd ~/tpm2-cmd-ref
@@ -3016,7 +3016,7 @@ Parses the README.md file and execute all lines that begin with `$ ` sequentiall
 % echo 'read input' >> test/robot.sh
 % cat README.md | grep '\(^$ \|^% \|^# [a-z]\)' | sed 's/^# /\n# /' | sed 's/^% /# % /' | sed 's/$ //' | sed 's/<--.*//' >> test/robot.sh
 
-# Execute script (approx. 6m)
+# Execute script (approx. 7m)
 % tpm2_clear -c p
 % cd test
 % chmod a+x robot.sh
