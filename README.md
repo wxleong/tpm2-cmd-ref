@@ -220,8 +220,8 @@ Test installation:
 
 If you have hardware TPM enabled on your Linux platform (e.g., Raspberry Pi 4), set the TCTI to device node `tpm0` or `tpmrm0`:
 ```
-% export TPM2TOOLS_TCTI="device:/dev/tpmrm0"
-% export TPM2TSSENGINE_TCTI="device:/dev/tpmrm0"
+$ export TPM2TOOLS_TCTI="device:/dev/tpmrm0"
+$ export TPM2TSSENGINE_TCTI="device:/dev/tpmrm0"
 
 # or
 
@@ -235,19 +235,19 @@ The Microsoft TPM2.0 simulator [[2]](#2) stores all persistent information in a 
 
 Perform TPM startup after launching the simulator, otherwise, all subsequent commands will fail with the error code 0x100 (TPM not initialized by TPM2_Startup):
 ```
-% tpm2_startup -c
+$ tpm2_startup -c
 ```
 
 Keep an eye on the TPM transient and session memory:
 ```
-% tpm2_getcap handles-transient
-% tpm2_getcap handles-loaded-session
+$ tpm2_getcap handles-transient
+$ tpm2_getcap handles-loaded-session
 ```
 
 Once it hit 3 handles, the next command may fail with the error code 0x902 (out of memory for object contexts) / 0x903 (out of memory for session contexts). To clear the transient memory:
 ```
-% tpm2_flushcontext -t
-% tpm2_flushcontext -l
+$ tpm2_flushcontext -t
+$ tpm2_flushcontext -l
 ```
 
 # Examples
@@ -2864,7 +2864,16 @@ Check auth set information:
 $ tpm2_getcap properties-variable
 ```
 
-Storage, endorsement, and lockout auth can be cleared by `tpm2_clear -c p platformpswd`:
+Storage, endorsement, and lockout auth can be cleared by:
+```
+% tpm2_changeauth -c p platformpswd
+```
+
+<!--
+# this is for the testing framework
+# execute clear TPM
+$ tpm2_clear -c p
+-->
 
 Platform auth can be cleared by cold/warm reset.
 
@@ -2986,12 +2995,9 @@ To change the endorsement primary seed (EPS) to a new value from the TPM's rando
 
 # Testing Framework
 
-Parse the README.md file and execute all lines that begin with `$ ` sequentially. Only work with hardware TPM:
+Parses the README.md file and execute all lines that begin with `$ ` sequentially. Only works with hardware TPM:
 
 ```
-# Set TCTI
-% export TPM2TOOLS_TCTI="device:/dev/tpmrm0"
-
 # Commands extraction
 % cd ~/tpm2-cmd-ref
 % echo '#!/bin/bash' > test/robot.sh
@@ -2999,8 +3005,6 @@ Parse the README.md file and execute all lines that begin with `$ ` sequentially
 % echo 'set -x' >> test/robot.sh
 % echo 'echo "press the reset button on TPM board, then enter any key to continue..."' >> test/robot.sh
 % echo 'read input' >> test/robot.sh
-% echo 'tpm2_startup -c' >> test/robot.sh
-% echo 'set -x' >> test/robot.sh
 % cat README.md | grep '\(^$ \|^% \|^# [a-z]\)' | sed 's/^# /\n# /' | sed 's/^% /# % /' | sed 's/$ //' | sed 's/<--.*//' >> test/robot.sh
 
 # Execute script
