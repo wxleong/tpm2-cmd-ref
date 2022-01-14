@@ -1177,7 +1177,7 @@ $ tpm2_nvundefine 0x01000000 -C o
 
 Verify TPM engine (tpm2-tss-engine) installation:
 ```
-% openssl engine -t -c tpm2tss
+$ openssl engine -t -c tpm2tss
 (tpm2tss) TPM2-TSS engine for OpenSSL
  [RSA, RAND]
      [ available ]
@@ -1185,103 +1185,113 @@ Verify TPM engine (tpm2-tss-engine) installation:
 
 Generate random value:
 ```
-% openssl rand -engine tpm2tss -hex 10
+$ openssl rand -engine tpm2tss -hex 10
 ```
 
 ### PEM Encoded Key
 
 Create parent key:
 ```
-% tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
-% tpm2_evictcontrol -C o -c primary_sh.ctx 0x81000001
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
+$ tpm2_evictcontrol -C o -c primary_sh.ctx 0x81000001
 ```
 
 Create RSA key using tpm2-tss-engine tool, the output is a PEM encoded TPM key object:
 ```
-% tpm2tss-genkey -P 0x81000001 -a rsa -s 2048 rsakey.pem
+$ tpm2tss-genkey -P 0x81000001 -a rsa -s 2048 rsakey.pem
 
 # or
 
-% tpm2_clear -c p
-% tpm2tss-genkey -a rsa -s 2048 rsakey.pem
+$ tpm2tss-genkey -a rsa -s 2048 rsakey.pem
 ```
 
 Create EC key using tpm2-tss-engine tool:
 ```
-% tpm2tss-genkey -P 0x81000001 -a ecdsa eckey.pem
+$ tpm2tss-genkey -P 0x81000001 -a ecdsa eckey.pem
 
 # or
 
-% tpm2_clear -c p
-% tpm2tss-genkey -a ecdsa eckey.pem
+$ tpm2tss-genkey -a ecdsa eckey.pem
 ```
 
 Read public component:
 ```
-% openssl rsa -engine tpm2tss -inform engine -in rsakey.pem -pubout -outform pem -out rsakey.pub.pem
-% openssl ec -engine tpm2tss -inform engine -in eckey.pem -pubout -outform pem -out eckey.pub.pem
+$ openssl rsa -engine tpm2tss -inform engine -in rsakey.pem -pubout -outform pem -out rsakey.pub.pem
+$ openssl ec -engine tpm2tss -inform engine -in eckey.pem -pubout -outform pem -out eckey.pub.pem
 ```
 
 RSA encryption & decryption:
 ```
-% echo "some secret" > secret.clear
-% openssl pkeyutl -pubin -inkey rsakey.pub.pem -in secret.clear -encrypt -out secret.cipher
-% openssl pkeyutl -engine tpm2tss -keyform engine -inkey rsakey.pem -decrypt -in secret.cipher -out secret.decipher
-% diff secret.clear secret.decipher
+$ echo "some secret" > secret.clear
+$ openssl pkeyutl -pubin -inkey rsakey.pub.pem -in secret.clear -encrypt -out secret.cipher
+$ openssl pkeyutl -engine tpm2tss -keyform engine -inkey rsakey.pem -decrypt -in secret.cipher -out secret.decipher
+$ diff secret.clear secret.decipher
 ```
 
 RSA signing & verification:
 ```
-% dd bs=1 count=32 </dev/urandom > data
-% openssl pkeyutl -engine tpm2tss -keyform engine -inkey rsakey.pem -sign -in data -out data.sig
-% openssl pkeyutl -pubin -inkey rsakey.pub.pem -verify -in data -sigfile data.sig
+$ dd bs=1 count=32 </dev/urandom > data
+$ openssl pkeyutl -engine tpm2tss -keyform engine -inkey rsakey.pem -sign -in data -out data.sig
+$ openssl pkeyutl -pubin -inkey rsakey.pub.pem -verify -in data -sigfile data.sig
 ```
 
 EC signing & verification:
 ```
-% dd bs=1 count=32 </dev/urandom > data
-% openssl pkeyutl -engine tpm2tss -keyform engine -inkey eckey.pem -sign -in data -out data.sig
-% openssl pkeyutl -pubin -inkey eckey.pub.pem -verify -in data -sigfile data.sig
+$ dd bs=1 count=32 </dev/urandom > data
+$ openssl pkeyutl -engine tpm2tss -keyform engine -inkey eckey.pem -sign -in data -out data.sig
+$ openssl pkeyutl -pubin -inkey eckey.pub.pem -verify -in data -sigfile data.sig
 ```
 
 Create self-signed certificate:
 ```
-% openssl req -new -x509 -engine tpm2tss -keyform engine -key rsakey.pem -subj "/CN=TPM/O=Infineon/C=SG" -out rsakey.crt.pem
-% openssl x509 -in rsakey.crt.pem -text -noout
-% openssl req -new -x509 -engine tpm2tss -keyform engine -key eckey.pem -subj "/CN=TPM/O=Infineon/C=SG" -out eckey.crt.pem
-% openssl x509 -in eckey.crt.pem -text -noout
+$ openssl req -new -x509 -engine tpm2tss -keyform engine -key rsakey.pem -subj "/CN=TPM/O=Infineon/C=SG" -out rsakey.crt.pem
+$ openssl x509 -in rsakey.crt.pem -text -noout
+$ openssl req -new -x509 -engine tpm2tss -keyform engine -key eckey.pem -subj "/CN=TPM/O=Infineon/C=SG" -out eckey.crt.pem
+$ openssl x509 -in eckey.crt.pem -text -noout
 ```
 
 Create certificate signing request (CSR):
 ```
-% openssl req -new -engine tpm2tss -keyform engine -key rsakey.pem -subj "/CN=TPM/O=Infineon/C=SG" -out rsakey.csr.pem
-% openssl req -in rsakey.csr.pem -text -noout
-% openssl req -new -engine tpm2tss -keyform engine -key eckey.pem -subj "/CN=TPM/O=Infineon/C=SG" -out eckey.csr.pem
-% openssl req -in eckey.csr.pem -text -noout
+$ openssl req -new -engine tpm2tss -keyform engine -key rsakey.pem -subj "/CN=TPM/O=Infineon/C=SG" -out rsakey.csr.pem
+$ openssl req -in rsakey.csr.pem -text -noout
+$ openssl req -new -engine tpm2tss -keyform engine -key eckey.pem -subj "/CN=TPM/O=Infineon/C=SG" -out eckey.csr.pem
+$ openssl req -in eckey.csr.pem -text -noout
 ```
 
 Clean up:
 ```
-% tpm2_clear -c p
+$ tpm2_clear -c p
 ```
 
 #### Conversion to PEM Encoded Key
 
 In the event that TPM key is not created using `tpm2tss-genkey`, use the following tool to make the conversion.
 
-Build tool:
+Build the tool:
 ```
-% gcc -Wall -o convert ~/tpm2-cmd-ref/openssl-lib-convert-to-pem-key/convert.c -lcrypto -ltss2-mu -L /usr/lib/x86_64-linux-gnu/engines-1.1 -ltpm2tss
+# ubuntu
+% gcc -Wall -o convert ~/tpm2-cmd-ref/openssl-lib-convert-to-pem-key/convert.c -lcrypto -ltss2-mu -L /usr/lib/x86_64-linux-gnu/engines-1.1/ -ltpm2tss
+
+# raspberry pi
+$ gcc -Wall -o convert ~/tpm2-cmd-ref/openssl-lib-convert-to-pem-key/convert.c -lcrypto -ltss2-mu -L /usr/lib/arm-linux-gnueabihf/engines-1.1/ -ltpm2tss
+```
+
+Set the LD_LIBRARY_PATH:
+```
+# ubuntu
+% export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/engines-1.1
+
+# raspberry pi
+$ export LD_LIBRARY_PATH=/usr/lib/arm-linux-gnueabihf/engines-1.1
 ```
 
 RSA key:
 ```
-% tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
-% tpm2_evictcontrol -C o -c primary_sh.ctx 0x81000001
-% tpm2_create -C 0x81000001 -g sha256 -G rsa -u rsakey.pub -r rsakey.priv -a "fixedtpm|fixedparent|sensitivedataorigin|userwithauth|decrypt|sign|noda"
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
+$ tpm2_evictcontrol -C o -c primary_sh.ctx 0x81000001
+$ tpm2_create -C 0x81000001 -g sha256 -G rsa -u rsakey.pub -r rsakey.priv -a "fixedtpm|fixedparent|sensitivedataorigin|userwithauth|decrypt|sign|noda"
 
-$ export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/engines-1.1
-% ./convert 0x81000001 rsakey.pub rsakey.priv rsakey.pem
+$ ./convert 0x81000001 rsakey.pub rsakey.priv rsakey.pem
 
 # quick verification
 % dd bs=1 count=32 </dev/urandom > data
@@ -1289,17 +1299,16 @@ $ export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/engines-1.1
 % openssl rsa -engine tpm2tss -inform engine -in rsakey.pem -pubout -outform pem -out rsakey.pub.pem
 % openssl pkeyutl -pubin -inkey rsakey.pub.pem -verify -in data -sigfile data.sig
 
-% tpm2_clear -c p
+$ tpm2_clear -c p
 ```
 
 EC key:
 ```
-% tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
-% tpm2_evictcontrol -C o -c primary_sh.ctx 0x81000001
-% tpm2_create -C 0x81000001 -g sha256 -G ecc -u eckey.pub -r eckey.priv -a "fixedtpm|fixedparent|sensitivedataorigin|userwithauth|sign|noda"
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
+$ tpm2_evictcontrol -C o -c primary_sh.ctx 0x81000001
+$ tpm2_create -C 0x81000001 -g sha256 -G ecc -u eckey.pub -r eckey.priv -a "fixedtpm|fixedparent|sensitivedataorigin|userwithauth|sign|noda"
 
-$ export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/engines-1.1
-% ./convert 0x81000001 eckey.pub eckey.priv eckey.pem
+$ ./convert 0x81000001 eckey.pub eckey.priv eckey.pem
 
 # quick verification
 % dd bs=1 count=32 </dev/urandom > data
@@ -1307,71 +1316,71 @@ $ export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/engines-1.1
 % openssl ec -engine tpm2tss -inform engine -in eckey.pem -pubout -outform pem -out eckey.pub.pem
 % openssl pkeyutl -pubin -inkey eckey.pub.pem -verify -in data -sigfile data.sig
 
-% tpm2_clear -c p
+$ tpm2_clear -c p
 ```
 
 ### Persistent Key
 
 Generate persistent RSA and EC keys using tpm2-tools:
 ```
-% tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
+$ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
 
-% tpm2_create -C primary_sh.ctx -g sha256 -G rsa -u rsakey.pub -r rsakey.priv -a "fixedtpm|fixedparent|sensitivedataorigin|userwithauth|decrypt|sign|noda"
-% tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -c rsakey.ctx
-% tpm2_evictcontrol -C o -c rsakey.ctx 0x81000002
+$ tpm2_create -C primary_sh.ctx -g sha256 -G rsa -u rsakey.pub -r rsakey.priv -a "fixedtpm|fixedparent|sensitivedataorigin|userwithauth|decrypt|sign|noda"
+$ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -c rsakey.ctx
+$ tpm2_evictcontrol -C o -c rsakey.ctx 0x81000002
 
-% tpm2_create -C primary_sh.ctx -g sha256 -G ecc -u eckey.pub -r eckey.priv -a "fixedtpm|fixedparent|sensitivedataorigin|userwithauth|sign|noda"
-% tpm2_load -C primary_sh.ctx -u eckey.pub -r eckey.priv -c eckey.ctx
-% tpm2_evictcontrol -C o -c eckey.ctx 0x81000003
+$ tpm2_create -C primary_sh.ctx -g sha256 -G ecc -u eckey.pub -r eckey.priv -a "fixedtpm|fixedparent|sensitivedataorigin|userwithauth|sign|noda"
+$ tpm2_load -C primary_sh.ctx -u eckey.pub -r eckey.priv -c eckey.ctx
+$ tpm2_evictcontrol -C o -c eckey.ctx 0x81000003
 ```
 
 Read public component:
 ```
-% openssl rsa -engine tpm2tss -inform engine -in 0x81000002 -pubout -outform pem -out rsakey.pub.pem
-% openssl ec -engine tpm2tss -inform engine -in 0x81000003 -pubout -outform pem -out eckey.pub.pem
+$ openssl rsa -engine tpm2tss -inform engine -in 0x81000002 -pubout -outform pem -out rsakey.pub.pem
+$ openssl ec -engine tpm2tss -inform engine -in 0x81000003 -pubout -outform pem -out eckey.pub.pem
 ```
 
 RSA encryption & decryption:
 ```
-% echo "some secret" > secret.clear
-% openssl pkeyutl -pubin -inkey rsakey.pub.pem -in secret.clear -encrypt -out secret.cipher
-% openssl pkeyutl -engine tpm2tss -keyform engine -inkey 0x81000002 -decrypt -in secret.cipher -out secret.decipher
-% diff secret.clear secret.decipher
+$ echo "some secret" > secret.clear
+$ openssl pkeyutl -pubin -inkey rsakey.pub.pem -in secret.clear -encrypt -out secret.cipher
+$ openssl pkeyutl -engine tpm2tss -keyform engine -inkey 0x81000002 -decrypt -in secret.cipher -out secret.decipher
+$ diff secret.clear secret.decipher
 ```
 
 RSA signing & verification:
 ```
-% dd bs=1 count=32 </dev/urandom > data
-% openssl pkeyutl -engine tpm2tss -keyform engine -inkey 0x81000002 -sign -in data -out data.sig
-% openssl pkeyutl -pubin -inkey rsakey.pub.pem -verify -in data -sigfile data.sig
+$ dd bs=1 count=32 </dev/urandom > data
+$ openssl pkeyutl -engine tpm2tss -keyform engine -inkey 0x81000002 -sign -in data -out data.sig
+$ openssl pkeyutl -pubin -inkey rsakey.pub.pem -verify -in data -sigfile data.sig
 ```
 
 EC signing & verification:
 ```
-% dd bs=1 count=32 </dev/urandom > data
-% openssl pkeyutl -engine tpm2tss -keyform engine -inkey 0x81000003 -sign -in data -out data.sig
-% openssl pkeyutl -pubin -inkey eckey.pub.pem -verify -in data -sigfile data.sig
+$ dd bs=1 count=32 </dev/urandom > data
+$ openssl pkeyutl -engine tpm2tss -keyform engine -inkey 0x81000003 -sign -in data -out data.sig
+$ openssl pkeyutl -pubin -inkey eckey.pub.pem -verify -in data -sigfile data.sig
 ```
 
 Create self-signed certificate:
 ```
-% openssl req -new -x509 -engine tpm2tss -keyform engine -key 0x81000002 -subj "/CN=TPM/O=Infineon/C=SG" -out rsakey.crt.pem
-% openssl x509 -in rsakey.crt.pem -text -noout
-% openssl req -new -x509 -engine tpm2tss -keyform engine -key 0x81000003 -subj "/CN=TPM/O=Infineon/C=SG" -out eckey.crt.pem
-% openssl x509 -in eckey.crt.pem -text -noout
+$ openssl req -new -x509 -engine tpm2tss -keyform engine -key 0x81000002 -subj "/CN=TPM/O=Infineon/C=SG" -out rsakey.crt.pem
+$ openssl x509 -in rsakey.crt.pem -text -noout
+$ openssl req -new -x509 -engine tpm2tss -keyform engine -key 0x81000003 -subj "/CN=TPM/O=Infineon/C=SG" -out eckey.crt.pem
+$ openssl x509 -in eckey.crt.pem -text -noout
 ```
 
 Create certificate signing request (CSR):
 ```
-% openssl req -new -engine tpm2tss -keyform engine -key 0x81000002 -subj "/CN=TPM/O=Infineon/C=SG" -out rsakey.csr.pem
-% openssl req -in rsakey.csr.pem -text -noout
-% openssl req -new -engine tpm2tss -keyform engine -key 0x81000003 -subj "/CN=TPM/O=Infineon/C=SG" -out eckey.csr.pem
-% openssl req -in eckey.csr.pem -text -noout
+$ openssl req -new -engine tpm2tss -keyform engine -key 0x81000002 -subj "/CN=TPM/O=Infineon/C=SG" -out rsakey.csr.pem
+$ openssl req -in rsakey.csr.pem -text -noout
+$ openssl req -new -engine tpm2tss -keyform engine -key 0x81000003 -subj "/CN=TPM/O=Infineon/C=SG" -out eckey.csr.pem
+$ openssl req -in eckey.csr.pem -text -noout
 ```
 
 Clean up:
 ```
-% tpm2_clear -c p
+$ tpm2_clear -c p
 ```
 
 ### Nginx & Curl
@@ -1437,10 +1446,15 @@ Using Curl to test the connection:
 - EC sign/verification
 
 ```
-% cd openssl-lib-general-examples
-% gcc -Wall -o examples examples.c -lssl -lcrypto -L /usr/lib/x86_64-linux-gnu/engines-1.1 -ltpm2tss
+# ubuntu
+% gcc -Wall -o examples ~/tpm2-cmd-ref/openssl-lib-general-examples/examples.c -lssl -lcrypto -L /usr/lib/x86_64-linux-gnu/engines-1.1/ -ltpm2tss
 % export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/engines-1.1
 % ./examples
+
+# raspberry pi
+$ gcc -Wall -o examples ~/tpm2-cmd-ref/openssl-lib-general-examples/examples.c -lssl -lcrypto -L /usr/lib/arm-linux-gnueabihf/engines-1.1/ -ltpm2tss -DENABLE_OPTIGA_TPM
+$ export LD_LIBRARY_PATH=/usr/lib/arm-linux-gnueabihf/engines-1.1
+$ ./examples
 ```
 
 ### Server-client TLS Communication
