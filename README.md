@@ -2228,11 +2228,11 @@ $ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsa
 $ echo "plaintext" > plain.txt
 
 # satisfy policy to access the key for signing use
-$ tpm2_startauthsession -S session.ctx --policy-session
-$ tpm2_policylocality -S session.ctx zero
-$ tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx
-$ tpm2_verifysignature -c rsakey.ctx -g sha256 -m plain.txt -s signature
-$ tpm2_flushcontext session.ctx
+% tpm2_startauthsession -S session.ctx --policy-session
+% tpm2_policylocality -S session.ctx zero
+% tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx
+% tpm2_verifysignature -c rsakey.ctx -g sha256 -m plain.txt -s signature
+% tpm2_flushcontext session.ctx
 ```
 
 #### tpm2_policynamehash
