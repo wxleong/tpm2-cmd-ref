@@ -1311,10 +1311,10 @@ $ tpm2_create -C 0x81000001 -g sha256 -G ecc -u eckey.pub -r eckey.priv -a "fixe
 $ ./convert 0x81000001 eckey.pub eckey.priv eckey.pem
 
 # quick verification
-% dd bs=1 count=32 </dev/urandom > data
-% openssl pkeyutl -engine tpm2tss -keyform engine -inkey eckey.pem -sign -in data -out data.sig
-% openssl ec -engine tpm2tss -inform engine -in eckey.pem -pubout -outform pem -out eckey.pub.pem
-% openssl pkeyutl -pubin -inkey eckey.pub.pem -verify -in data -sigfile data.sig
+$ dd bs=1 count=32 </dev/urandom > data
+$ openssl pkeyutl -engine tpm2tss -keyform engine -inkey eckey.pem -sign -in data -out data.sig
+$ openssl ec -engine tpm2tss -inform engine -in eckey.pem -pubout -outform pem -out eckey.pub.pem
+$ openssl pkeyutl -pubin -inkey eckey.pub.pem -verify -in data -sigfile data.sig
 
 $ tpm2_clear -c p
 ```
