@@ -74,7 +74,7 @@ OPTIGA™ TPM 2.0 command reference and code examples.
     - **[Signing & Verification](#signing--verification)**
     - **[Startup](#startup)**
     - **[TPM Clear](#tpm-clear)**
-- **[Testing Framework](#testing-framework)**
+- **[Validation Framework](#validation-framework)**
 - **[References](#references)**
 - **[License](#license)**
 
@@ -3008,7 +3008,7 @@ To change the endorsement primary seed (EPS) to a new value from the TPM's rando
 
 <!-- to-do: tpm2_clearcontrol -->
 
-# Testing Framework
+# Validation Framework
 
 **Only works on Raspberry Pi.**
 
