@@ -468,7 +468,7 @@ $ tpm2_readclock
     safe: yes
 
 # get current clock in milliseconds
-$ CURRENT_TIME=`tpm2_readclock | grep 'clock' | sed 's/.* //'`
+$ CURRENT_CLOCK=`tpm2_readclock | grep 'clock:' | sed 's/.* //'`
 
 # set to 10 seconds in the future
 $ FUTURE=$(($CURRENT_TIME + 10000))
@@ -2831,7 +2831,7 @@ $ tpm2_changeauth -c e endorsementpswd
 
 Set platform hierarchy auth:
 ```
-$ tpm2_changeauth -c p platformpswd
+% tpm2_changeauth -c p platformpswd
 ```
 
 Set lockout auth:
@@ -2846,10 +2846,7 @@ Check auth set information:
 $ tpm2_getcap properties-variable
 ```
 
-Storage, endorsement, and lockout auth can be cleared by `tpm2_clear -c p`:
-```
-$ tpm2_clear -c p platformpswd
-```
+Storage, endorsement, and lockout auth can be cleared by `tpm2_clear -c p platformpswd`:
 
 Platform auth can be cleared by cold/warm reset.
 
@@ -2984,6 +2981,7 @@ Parse the README.md file and execute all lines that begin with `$ ` sequentially
 % cat README.md | grep '\(^$ \|^% \|^# [a-z]\)' | sed 's/^# /\n# /' | sed 's/^% /# % /' | sed 's/$ //' | sed 's/<--.*//' >> test/robot.sh
 
 # Execute script
+% cd test
 % chmod a+x robot.sh
 % ./robot.sh
 ```
