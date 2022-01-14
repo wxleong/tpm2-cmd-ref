@@ -1151,7 +1151,7 @@ $ echo "plaintext" > plain.txt
 # satisfy the policy and use the key for signing
 $ tpm2_startauthsession --policy-session -S session.ctx
 $ tpm2_policysecret -S session.ctx -c 0x01000000 pass123
-$ tpm2_nvread 0x01000000 -C o | xxd -p                   <---- notice pinCount increases by 1
+$ tpm2_nvread 0x01000000 -C o | xxd -p                   <---- notice pinCount increases by 1 (now 2)
 $ tpm2_sign -c rsakey.ctx -o signature plain.txt -p session:session.ctx
 $ tpm2_verifysignature -c rsakey.ctx -g sha256 -m plain.txt -s signature
 $ tpm2_flushcontext session.ctx
@@ -1160,7 +1160,6 @@ $ tpm2_flushcontext session.ctx
 $ tpm2_startauthsession --policy-session -S session.ctx
 $ tpm2_policysecret -S session.ctx -c 0x01000000 pass123 
 $ tpm2_nvread 0x01000000 -C o | xxd -p                   <---- notice pinCount increases by 1
-$ tpm2_policysecret -S session.ctx -c 0x01000000 pass123
 $ tpm2_policysecret -S session.ctx -c 0x01000000 pass123
 $ tpm2_policysecret -S session.ctx -c 0x01000000 pass123
 $ tpm2_nvread 0x01000000 -C o | xxd -p                   <---- notice pinCount == pinLimit
