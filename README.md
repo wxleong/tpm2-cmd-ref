@@ -3036,6 +3036,7 @@ Parses the README.md file to execute all lines that begin with `$ ` sequentially
 % chmod a+x robot.sh
 % time ./robot.sh
 ```
+<!-- to save the log: `time ./robot.sh >log.txt 2>&1` -->
 
 # References
 
