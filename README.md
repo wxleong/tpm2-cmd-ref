@@ -1711,6 +1711,8 @@ $ tpm2_unseal -c message.seal.ctx -o message.unseal
 $ diff message message.unseal
 ```
 
+<!-- to-do: TPM2_CreatePrimary can be used for sealing too, check if it is possible with tpm2-tools  -->
+
 ## Secure Key Transfer (Duplicate Key)
 
 Examples showing here are in the following settings:
