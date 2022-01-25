@@ -12,6 +12,7 @@ OPTIGA™ TPM 2.0 command reference and code examples.
     - **[Audit](#audit)**
     - **[Certify](#certify)**
     - **[Clock & Time](#clock--time)**
+    - **[Clear Control](#clear-control)**
     - **[Create Keys](#create-keys)**
     - **[Dictionary Attack Protection](#dictionary-attack-protection)**
 	- **[Display TPM Capabilities](#display-tpm-capabilities)**
@@ -29,12 +30,13 @@ OPTIGA™ TPM 2.0 command reference and code examples.
         - **[PEM Encoded Key](#pem-encoded-key)**
             - **[Conversion to PEM Encoded Key](#conversion-to-pem-encoded-key)**
         - **[Persistent Key](#persistent-key-1)**
+        - **[Server-client TLS Communication](#server-client-tls-communication)**
         - **[Nginx & Curl](#nginx--curl)**
             - **[PEM Encoded Key](#pem-encoded-key-1)**
             - **[Persistent Key](#persistent-key-2)**
     - **[OpenSSL Library](#openssl-library)**
         - **[General Examples](#general-examples)**
-        - **[Server-client TLS Communication](#server-client-tls-communication)**
+        - **[Server-client TLS Communication](#server-client-tls-communication-1)**
     - **[Password Authorization](#password-authorization)**
     - **[PCR](#pcr)**
     - **[Persistent Key](#persistent-key)**
@@ -476,6 +478,31 @@ $ FUTURE=$(($CURRENT_CLOCK + 10000))
 
 # set the clock
 $ tpm2_setclock $FUTURE
+```
+
+## Clear Control
+
+Read the disableClear attribute:
+```
+$ tpm2_getcap properties-variable | grep disableClear
+```
+
+Disable clear:
+```
+$ tpm2_clearcontrol -C p s
+$ tpm2_getcap properties-variable | grep disableClear
+
+# tpm clear will fail
+% tpm2_clear -c p
+```
+
+Enable clear:
+```
+$ tpm2_clearcontrol -C p c
+$ tpm2_getcap properties-variable | grep disableClear
+
+# tpm clear will succeed
+% tpm2_clear -c p
 ```
 
 ## Create Keys
@@ -1381,6 +1408,38 @@ $ openssl req -in eckey.csr.pem -text -noout
 Clean up:
 ```
 $ tpm2_clear -c p
+```
+
+### Server-client TLS Communication
+
+Microsoft TPM2.0 simulator:
+```
+% cd openssl-cli-tls-mssim
+% chmod a+x *.sh
+% ./0_clean-up.sh 
+% ./1_init-tpm.sh 
+% ./2_gen-ca-crt.sh 
+% ./3_gen-client-crt.sh 
+% ./4_start-server.sh
+
+# start a new terminal
+% cd openssl-cli-tls-mssim
+% ./5_start-good-client.sh
+```
+
+Hardware TPM:
+```
+% cd openssl-cli-tls-optiga-tpm
+% chmod a+x *.sh
+% ./0_clean-up.sh 
+% ./1_init-tpm.sh 
+% ./2_gen-ca-crt.sh 
+% ./3_gen-client-crt.sh 
+% ./4_start-server.sh
+
+# start a new terminal
+% cd openssl-cli-tls-mssim
+% ./5_start-good-client.sh
 ```
 
 ### Nginx & Curl
@@ -3008,8 +3067,6 @@ To change the endorsement primary seed (EPS) to a new value from the TPM's rando
 % tpm2_changeeps
 ```
 
-<!-- to-do: tpm2_clearcontrol -->
-
 # Validation Framework
 
 **Only works on Raspberry Pi.**
@@ -3032,7 +3089,7 @@ Parses the README.md file to execute all lines that begin with `$ ` sequentially
 % echo 'read input' >> test/robot.sh
 % cat README.md | grep '\(^$ \|^% \|^# [a-z]\)' | sed 's/^# /\n# /' | sed 's/^% /# % /' | sed 's/$ //' | sed 's/<--.*//' >> test/robot.sh
 
-# Execute script (approx. 7m)
+# Execute script (approx. 8m)
 % tpm2_clear -c p
 % cd test
 % chmod a+x robot.sh
