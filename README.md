@@ -77,6 +77,7 @@ OPTIGA™ TPM 2.0 command reference and code examples.
     - **[Startup](#startup)**
     - **[TPM Clear](#tpm-clear)**
 - **[Examples (FAPI)](#examples-fapi)**
+    - **[Provision](#provision)**
 - **[Validation Framework](#validation-framework)**
 - **[References](#references)**
 - **[License](#license)**
@@ -3077,6 +3078,33 @@ To change the endorsement primary seed (EPS) to a new value from the TPM's rando
 
 TCG Software Stack 2.0 (TSS 2.0) Specification Structure:
 - TCG TSS 2.0 Feature API (FAPI) Specification [[16]](#16)
+
+## Provision
+
+1. Recommended change in `/usr/local/etc/tpm2-tss/fapi-config.json`:
+    - Move all directories to user space, hence avoid access permission issues and `double free or corruption` regression
+    - Change the profile to `P_ECCP256SHA256` instead of `P_RSA2048SHA256` to improve the performance. You may also update the `tcti` parameter to switch between hardware or simulated TPM:
+    ```
+    {
+        "profile_name": "P_ECCP256SHA256",
+        "profile_dir": "/usr/local/etc/tpm2-tss/fapi-profiles/",
+        "user_dir": "/home/pi/.local/share/tpm2-tss/user/keystore",
+        "system_dir": "/home/pi/.local/share/tpm2-tss/system/keystore",
+        "tcti": "device:/dev/tpmrm0",
+        "system_pcrs" : [],
+        "log_dir" : "/home/pi/.local/share/tpm2-tss/eventlog/"
+    }
+    ```
+2. Reset the FAPI database by emptying the user_dir and system_dir.
+3. Clear TPM:
+    ```
+    $ tpm2_clear -c p
+    ```
+4. Provision TPM and initialize the metadata.<br>
+	Storage Root Key (SRK) will be created based on the profile `profile_dir/profile_name` and made persistent at handle `0x81000001` (specified in the profile) with no authorization value. TPM metadata is stored in the directory `system_dir`.
+    ```
+    $ tss2_provision
+    ```
 
 # Validation Framework
 
