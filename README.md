@@ -8,7 +8,7 @@ OPTIGA™ TPM 2.0 command reference and code examples.
 - **[Setup on Ubuntu](#setup-on-ubuntu)**
 - **[Setup on Raspberry Pi](#setup-on-raspberry-pi)**
 - **[Behaviour of Microsoft TPM2.0 Simulator](#behaviour-of-microsoft-tpm20-simulator)**
-- **[Examples](#examples)**
+- **[Examples (SAPI/ESAPI)](#examples-sapiesapi)**
     - **[Audit](#audit)**
     - **[Certify](#certify)**
     - **[Clock & Time](#clock--time)**
@@ -76,6 +76,7 @@ OPTIGA™ TPM 2.0 command reference and code examples.
     - **[Signing & Verification](#signing--verification)**
     - **[Startup](#startup)**
     - **[TPM Clear](#tpm-clear)**
+- **[Examples (FAPI)](#examples-fapi)**
 - **[Validation Framework](#validation-framework)**
 - **[References](#references)**
 - **[License](#license)**
@@ -253,7 +254,11 @@ $ tpm2_flushcontext -t
 $ tpm2_flushcontext -l
 ```
 
-# Examples
+# Examples (SAPI/ESAPI)
+
+TCG Software Stack 2.0 (TSS 2.0) Specification Structure:
+- TCG TSS 2.0 System API (SAPI) Specification [[14]](#14)
+- TCG TSS 2.0 Enhanced System API (ESAPI) Specification [[15]](#15)
 
 ## Audit
 
@@ -2288,6 +2293,7 @@ While higher localities may exist, Locality 4 is the highest locality level defi
 
 Restrict TPM object authorization to specific localities. Changing locality of TPM varies on different platforms. Linux driver doesn't expose a mechanism for user space applications to set locality for the moment ([[11]](#11)). The default locality used in Linux for user space applications is zero.
 
+<!-- to-do: check if this is fixed in latest version -->
 **Warning:** Apply the fix ([[12]](#12)) to pass the example using tpm2-tools version 5.2.
 
 ```
@@ -3067,6 +3073,11 @@ To change the endorsement primary seed (EPS) to a new value from the TPM's rando
 % tpm2_changeeps
 ```
 
+# Examples (FAPI)
+
+TCG Software Stack 2.0 (TSS 2.0) Specification Structure:
+- TCG TSS 2.0 Feature API (FAPI) Specification [[16]](#16)
+
 # Validation Framework
 
 **Only works on Raspberry Pi.**
@@ -3112,6 +3123,9 @@ Parses the README.md file to execute all lines that begin with `$ ` sequentially
 <a id="11">[11] https://github.com/tpm2-software/tpm2-tss/blob/master/src/tss2-tcti/tcti-device.c#L371</a><br>
 <a id="12">[12] https://github.com/tpm2-software/tpm2-tools/commit/7b6600d3214dd45531bdb53d5f2510404c31fd6b#diff-b7ca48acb8f12449d165509c68d04600fac53b56bfc4c43462908815b9602def</a><br>
 <a id="13">[13] https://github.com/Infineon/remote-attestation-optiga-tpm</a><br>
+<a id="14">[14] https://trustedcomputinggroup.org/resource/tcg-tss-2-0-system-level-api-sapi-specification/</a><br>
+<a id="15">[15] https://trustedcomputinggroup.org/resource/tcg-tss-2-0-enhanced-system-api-esapi-specification/</a><br>
+<a id="16">[16] https://trustedcomputinggroup.org/resource/tss-fapi/</a><br>
 
 # License
 
