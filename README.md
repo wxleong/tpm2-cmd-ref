@@ -3408,6 +3408,23 @@ Immediately after `tss2_provision` you should see:
 - `/P_RSA2048SHA256/HN`: Null hierarchy
 
 
+## Quote
+
+```
+$ tss2_createkey -p /P_RSA2048SHA256/HS/SRK/LeafKey -a ""
+
+# generate quote
+$ tss2_getrandom -n 16 -f -o quote.qualifying
+$ tss2_quote -p /P_RSA2048SHA256/HS/SRK/LeafKey -x "0,16" -Q quote.qualifying -f -o quote.sig -l quote.log -c key.crt -q quote.info
+
+# verify quote
+$ tss2_verifyquote -k /P_RSA2048SHA256/HS/SRK/LeafKey -Q quote.qualifying -q quote.info -i quote.sig -l quote.log
+
+# clean up
+$ tss2_delete -p /P_RSA2048SHA256/HS/SRK/LeafKey
+$ rm quote.* key.*
+```
+
 # Validation Framework
 
 **Only works on Raspberry Pi.**
