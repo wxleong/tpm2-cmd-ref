@@ -1010,7 +1010,7 @@ NV undefine:
 $ tpm2_nvundefine 0x01000000 -C o
 ```
 
-NV with auth value protection:
+NV with authvalue protection:
 ```
 $ dd bs=1 count=32 </dev/urandom >data
 $ tpm2_nvdefine 0x01000000 -C o -s 32 -a "authread|authwrite" -p pswd
@@ -2945,7 +2945,7 @@ Set lockout auth:
 $ tpm2_changeauth -c l lockoutpswd
 ```
 
-Platform auth value is not persistent, after a TPM reset, it will be set to empty auth.
+Platform authvalue is not persistent, after a TPM reset, it will be set to empty auth.
 
 Check auth set information:
 ```
@@ -3134,16 +3134,26 @@ One-time provision:
 ## Change Auth
 
 ```
-$ tss2_changeauth
+# create a key with authvalue
+$ tss2_createkey -p /P_RSA2048SHA256/HS/SRK/LeafKey -a "pass123"
+
+# change the authvalue
+$ tss2_changeauth -p /P_RSA2048SHA256/HS/SRK/LeafKey -a "321ssap"
+
+# clean up
+$ tss2_delete -p /P_RSA2048SHA256/HS/SRK/LeafKey
 ```
+<!--
+A callback is registered using Fapi_SetAuthCB to allow the TSS to get authorization values from the application layer. 
+-->
 
 ## Create Key
 
 ```
-# create a key without auth value
+# create a key without authvalue
 $ tss2_createkey -p /P_RSA2048SHA256/HS/SRK/LeafKey1 -t "decrypt,sign" -a ""
 
-# create a key with auth value
+# create a key with authvalue
 $ tss2_createkey -p /P_RSA2048SHA256/HS/SRK/LeafKey2 -t "decrypt,sign" -a "pass123"
 
 # create a persistent key
