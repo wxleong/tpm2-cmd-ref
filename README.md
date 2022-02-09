@@ -3188,7 +3188,6 @@ $ tss2_getrandom -n 32 -f -o dummy
 $ tss2_sign -p /P_RSA2048SHA256/HS/SRK/LeafKey -s "RSA_SSA" -d dummy -f -o dummy.sig -k key.pub.pem -c key.crt
 $ openssl rsa -inform PEM -noout -text -in key.pub.pem -pubin
 
-# get random data
 $ echo "some secret" > secret.clear
 
 # use TPM for encryption
@@ -3245,6 +3244,23 @@ $ tss2_gettpmblobs -p /P_RSA2048SHA256/HS/SRK/LeafKey -f -u key.pub -r key.priv 
 # clean up
 $ tss2_delete -p /P_RSA2048SHA256/HS/SRK/LeafKey
 $ rm key.*
+```
+
+## Seal/Unseal
+
+```
+$ echo "some secret" > secret.clear
+
+# seal the secret
+$ tss2_createseal -p /P_RSA2048SHA256/HS/SRK/LeafKey -a "" -i secret.clear
+
+# unseal the secret
+$ tss2_unseal -p /P_RSA2048SHA256/HS/SRK/LeafKey -f -o secret.unseal
+$ diff secret.unseal secret.clear
+
+# clean up
+$ tss2_delete -p /P_RSA2048SHA256/HS/SRK/LeafKey
+$ rm secret.*
 ```
 
 ## Set/Get App Data
