@@ -236,7 +236,7 @@ Test installation:
 
 # Behaviour of Microsoft TPM2.0 Simulator
 
-The Microsoft TPM2.0 simulator [[2]](#2) stores all persistent information in a file (`NVChip`). Find the file in the directory you launched the simulator. If you wish to start fresh, erase the file before launching the simulator.
+The Microsoft TPM2.0 simulator [[2]](#2) stores all persistent information in a file (`NVChip`). Find the file in the directory where you launched your simulator. If you wish to start fresh, erase the file before launching the simulator.
 
 Perform TPM startup after launching the simulator, otherwise, all subsequent commands will fail with the error code 0x100 (TPM not initialized by TPM2_Startup):
 ```
@@ -260,6 +260,11 @@ $ tpm2_flushcontext -l
 TCG Software Stack 2.0 (TSS 2.0) Specification Structure:
 - TCG TSS 2.0 System API (SAPI) Specification [[14]](#14)
 - TCG TSS 2.0 Enhanced System API (ESAPI) Specification [[15]](#15)
+
+<!--
+For validation use:
+$ sudo chmod a+rw /dev/tpmrm0
+-->
 
 ## Audit
 
@@ -3088,14 +3093,32 @@ TCG Software Stack 2.0 (TSS 2.0) Specification Structure:
     {
         "profile_name": "P_ECCP256SHA256",
         "profile_dir": "/usr/local/etc/tpm2-tss/fapi-profiles/",
-        "user_dir": "/home/pi/.local/share/tpm2-tss/user/keystore",
-        "system_dir": "/home/pi/.local/share/tpm2-tss/system/keystore",
+        "user_dir": "/home/pi/.local/share/tpm2-tss/user/keystore/",
+        "system_dir": "/home/pi/.local/share/tpm2-tss/system/keystore/",
         "tcti": "device:/dev/tpmrm0",
         "system_pcrs" : [],
         "log_dir" : "/home/pi/.local/share/tpm2-tss/eventlog/"
     }
     ```
-2. Reset the FAPI database by emptying the user_dir and system_dir.
+    <!--
+    For validation use:
+    $ sudo su -c 'rm /usr/local/etc/tpm2-tss/fapi-config.json'
+    $ sudo su -c 'echo "{" > /usr/local/etc/tpm2-tss/fapi-config.json'
+    $ sudo su -c 'echo "     \"profile_name\": \"P_ECCP256SHA256\"," >> /usr/local/etc/tpm2-tss/fapi-config.json'
+    $ sudo su -c 'echo "     \"profile_dir\": \"/usr/local/etc/tpm2-tss/fapi-profiles/\"," >> /usr/local/etc/tpm2-tss/fapi-config.json'
+    $ sudo su -c 'echo "     \"user_dir\": \"/home/pi/.local/share/tpm2-tss/user/keystore/\"," >> /usr/local/etc/tpm2-tss/fapi-config.json'
+    $ sudo su -c 'echo "     \"system_dir\": \"/home/pi/.local/share/tpm2-tss/system/keystore/\"," >> /usr/local/etc/tpm2-tss/fapi-config.json'
+    $ sudo su -c 'echo "     \"tcti\": \"device:/dev/tpmrm0\"," >> /usr/local/etc/tpm2-tss/fapi-config.json'
+    $ sudo su -c 'echo "     \"system_pcrs\" : []," >> /usr/local/etc/tpm2-tss/fapi-config.json'
+    $ sudo su -c 'echo "     \"log_dir\" : \"/home/pi/.local/share/tpm2-tss/eventlog/\"" >> /usr/local/etc/tpm2-tss/fapi-config.json'
+    $ sudo su -c 'echo "}" >> /usr/local/etc/tpm2-tss/fapi-config.json'
+    $ cat /usr/local/etc/tpm2-tss/fapi-config.json
+    -->
+2. Reset the FAPI database by emptying the user_dir and system_dir:
+    ```
+    $ sudo rm -rf /home/pi/.local/share/tpm2-tss/user/keystore
+    $ sudo rm -rf /home/pi/.local/share/tpm2-tss/system/keystore
+    ```
 3. Clear TPM:
     ```
     $ tpm2_clear -c p
@@ -3126,7 +3149,7 @@ Parses the README.md file to execute all lines that begin with `$ ` sequentially
 % echo 'set -x' >> test/robot.sh
 % echo 'echo "press the reset button on TPM board, then enter any key to continue..."' >> test/robot.sh
 % echo 'read input' >> test/robot.sh
-% cat README.md | grep '\(^$ \|^% \|^# [a-z]\)' | sed 's/^# /\n# /' | sed 's/^% /# % /' | sed 's/$ //' | sed 's/<--.*//' >> test/robot.sh
+% cat README.md | grep '\([ ]*$ \|^% \|^# [a-z]\)' | sed 's/^# /\n# /' | sed 's/^% /# % /' | sed 's/[ ]*$ //' | sed 's/<--.*//' >> test/robot.sh
 
 # Execute script (approx. 8m)
 % tpm2_clear -c p
@@ -3158,7 +3181,6 @@ Parses the README.md file to execute all lines that begin with `$ ` sequentially
 # License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
 
 # To-dos
 
