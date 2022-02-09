@@ -3210,6 +3210,13 @@ $ tss2_getinfo -o -
 $ tss2_getinfo -o info.txt
 ```
 
+## Get EK Certificate
+
+```
+$ tss2_getcertificate -p /P_RSA2048SHA256/HE/EK -o ek.crt
+$ openssl x509 -inform pem -in ek.crt -text
+```
+
 ## Get Random
 
 ```
