@@ -3176,6 +3176,25 @@ $ tss2_createkey -p /P_ECCP256SHA256/HS/SRK/LeafKey -a ""
 $ tss2_delete -p /P_ECCP256SHA256/HS/SRK/LeafKey
 ```
 
+## Get Info
+
+Get TPM capabilities:
+```
+$ tss2_getinfo -o -
+
+# or
+
+$ tss2_getinfo -o info.txt
+```
+
+## Get Random
+
+```
+$ tss2_getrandom -n 32 --hex -o -
+$ tss2_getrandom -n 32 -f -o random.bin
+$ rm random.bin
+```
+
 ## Set/Get Description
 
 ```
@@ -3190,17 +3209,6 @@ $ tss2_getdescription -p /P_ECCP256SHA256/HS/SRK/LeafKey -o -
 
 # clean up
 $ tss2_delete -p /P_ECCP256SHA256/HS/SRK/LeafKey
-```
-
-## Get Info
-
-Get TPM capabilities:
-```
-$ tss2_getinfo -o -
-
-# or
-
-$ tss2_getinfo -o info.txt
 ```
 
 ## List Objects
