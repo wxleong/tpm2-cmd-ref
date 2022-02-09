@@ -3178,11 +3178,16 @@ $ tss2_delete -p /P_RSA2048SHA256/HS/SRK/LeafKey
 
 ## Encryption & Decryption
 
-This section is for P_RSA2048SHA256 only.
+This section is for `P_RSA2048SHA256` only.
 
 ```
 # create key
 $ tss2_createkey -p /P_RSA2048SHA256/HS/SRK/LeafKey -a ""
+
+# get the PEM encoded public key
+$ tss2_getrandom -n 32 -f -o dummy
+$ tss2_sign -p /P_RSA2048SHA256/HS/SRK/LeafKey -s "RSA_SSA" -d dummy -f -o dummy.sig -k key.pub.pem -c key.crt
+$ openssl rsa -inform PEM -noout -text -in key.pub.pem -pubin
 
 # get random data
 $ echo "some secret" > secret.clear
@@ -3191,16 +3196,17 @@ $ echo "some secret" > secret.clear
 $ tss2_encrypt -p /P_RSA2048SHA256/HS/SRK/LeafKey -i secret.clear -o secret1.cipher
 
 # use OpenSSL for encryption
-
+$ openssl rsautl -encrypt -inkey key.pub.pem -in secret.clear -pubin -out secret2.cipher
 
 # decryption
 $ tss2_decrypt -p /P_RSA2048SHA256/HS/SRK/LeafKey -i secret1.cipher -o secret1.decipher
 $ diff secret1.decipher secret.clear
+$ tss2_decrypt -p /P_RSA2048SHA256/HS/SRK/LeafKey -i secret1.cipher -o secret2.decipher
+$ diff secret2.decipher secret.clear
 
 # clean up
 $ tss2_delete -p /P_RSA2048SHA256/HS/SRK/LeafKey
-$ rm secret.clear secret1.*
-
+$ rm secret.clear secret1.* secret2.* dummy dummy.* key.*
 ``` 
 
 ## Get Info
