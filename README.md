@@ -3271,6 +3271,7 @@ $ tss2_createkey -p /P_RSA2048SHA256/HS/SRK/LeafKey -a ""
 
 # create a dummy certificate
 $ openssl req -x509 -sha256 -nodes -days 365 -subj "/CN=Dummy/O=Infineon/C=SG" -newkey rsa:2048 -keyout dummy.key -out dummy-in.crt
+$ openssl x509 -inform pem -in dummy-in.crt -text
 
 # associate a certificate (PEM encoding) with a given object
 # the certificate will be stored in plain in `/home/pi/.local/share/tpm2-tss/user/keystore/P_RSA2048SHA256/HS/SRK/LeafKey/object.json`
@@ -3305,6 +3306,32 @@ $ tss2_setdescription -p /P_RSA2048SHA256/HS/SRK/LeafKey
 
 # clean up
 $ tss2_delete -p /P_RSA2048SHA256/HS/SRK/LeafKey
+```
+
+## Signing & Verification
+
+```
+# create signing key
+$ tss2_createkey -p /P_RSA2048SHA256/HS/SRK/LeafKey -a ""
+
+# generate digest
+$ echo "some message" > message
+$ openssl dgst -sha256 -binary -out message.digest message
+
+# sign and receive the signature, signing public key (PEM encoded), and signing key associated certificate (if there is one)
+$ tss2_sign -p /P_RSA2048SHA256/HS/SRK/LeafKey -s "RSA_SSA" -d message.digest -f -o message.sig -k key.pub -c key.crt
+% openssl x509 -inform pem -in key.crt -text
+$ openssl rsa -inform PEM -noout -text -in key.pub -pubin
+
+# verify the signature using TPM
+$ tss2_verifysignature -p /P_RSA2048SHA256/HS/SRK/LeafKey -d message.digest -i message.sig
+
+# verify the signature using OpenSSL
+$ openssl dgst -sha256 -verify key.pub -keyform pem -signature message.sig message
+
+# clean up
+$ tss2_delete -p /P_RSA2048SHA256/HS/SRK/LeafKey
+$ rm message message.*
 ```
 
 ## List Objects
