@@ -3178,8 +3178,7 @@ $ tss2_delete -p /P_RSA2048SHA256/HS/SRK/LeafKey
 
 ## Encryption & Decryption
 
-This section is for `P_RSA2048SHA256` only.
-
+For profile `P_RSA2048SHA256`:
 ```
 # create key
 $ tss2_createkey -p /P_RSA2048SHA256/HS/SRK/LeafKey -a ""
@@ -3316,6 +3315,7 @@ $ tss2_delete -p /P_RSA2048SHA256/HS/SRK/LeafKey
 
 ## Signing & Verification
 
+For profile `P_RSA2048SHA256`:
 ```
 # create signing key
 $ tss2_createkey -p /P_RSA2048SHA256/HS/SRK/LeafKey -a ""
@@ -3324,7 +3324,7 @@ $ tss2_createkey -p /P_RSA2048SHA256/HS/SRK/LeafKey -a ""
 $ echo "some message" > message
 $ openssl dgst -sha256 -binary -out message.digest message
 
-# sign and receive the signature, signing public key (PEM encoded), and signing key associated certificate (if there is one)
+# sign and receive the signature, public component of the signing key (PEM encoded), and the associated certificate (if there is one)
 $ tss2_sign -p /P_RSA2048SHA256/HS/SRK/LeafKey -s "RSA_SSA" -d message.digest -f -o message.sig -k key.pub -c key.crt
 % openssl x509 -inform pem -in key.crt -text
 $ openssl rsa -inform PEM -noout -text -in key.pub -pubin
@@ -3337,7 +3337,32 @@ $ openssl dgst -sha256 -verify key.pub -keyform pem -signature message.sig messa
 
 # clean up
 $ tss2_delete -p /P_RSA2048SHA256/HS/SRK/LeafKey
-$ rm message message.*
+$ rm message message.* key.*
+```
+
+For profile `P_ECCP256SHA256`:
+```
+# create signing key
+% tss2_createkey -p /P_ECCP256SHA256/HS/SRK/LeafKey -a ""
+
+# generate digest
+% echo "some message" > message
+% openssl dgst -sha256 -binary -out message.digest message
+
+# sign and receive the signature, public component of the signing key (PEM encoded), and the associated certificate (if there is one)
+% tss2_sign -p /P_ECCP256SHA256/HS/SRK/LeafKey -d message.digest -f -o message.sig -k key.pub -c key.crt
+% openssl x509 -inform pem -in key.crt -text
+% openssl ec -inform PEM -noout -text -in key.pub -pubin
+
+# verify the signature using TPM
+% tss2_verifysignature -p /P_ECCP256SHA256/HS/SRK/LeafKey -d message.digest -i message.sig
+
+# verify the signature using OpenSSL
+% openssl dgst -sha256 -verify key.pub -keyform pem -signature message.sig message
+
+# clean up
+% tss2_delete -p /P_ECCP256SHA256/HS/SRK/LeafKey
+% rm message message.* key.*
 ```
 
 ## List Objects
