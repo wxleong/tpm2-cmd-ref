@@ -3195,13 +3195,32 @@ $ tss2_getrandom -n 32 -f -o random.bin
 $ rm random.bin
 ```
 
+## Set/Get App Data
+
+```
+$ tss2_createkey -p /P_ECCP256SHA256/HS/SRK/LeafKey -a ""
+
+# associate an arbitrary data blob with a given object
+# the data is stored in plain in `/home/pi/.local/share/tpm2-tss/user/keystore/P_ECCP256SHA256/HS/SRK/LeafKey/object.json`
+$ tss2_getrandom -n 32 -f -o data-in.bin
+$ tss2_setappdata -p /P_ECCP256SHA256/HS/SRK/LeafKey -i data-in.bin
+
+# get the data
+$ tss2_getappdata -p /P_ECCP256SHA256/HS/SRK/LeafKey -f -o data-out.bin
+$ diff data-in.bin data-out.bin
+
+# clean up
+$ tss2_delete -p /P_ECCP256SHA256/HS/SRK/LeafKey
+$ rm data-in.bin data-out.bin
+```
+
 ## Set/Get Description
 
 ```
 $ tss2_createkey -p /P_ECCP256SHA256/HS/SRK/LeafKey -a ""
 
 # assign a human readable description to an object in the metadata store
-# the description will appear in `/home/pi/.local/share/tpm2-tss/user/keystore/P_ECCP256SHA256/HS/SRK/LeafKey/object.json`
+# the description is stored in plain in `/home/pi/.local/share/tpm2-tss/user/keystore/P_ECCP256SHA256/HS/SRK/LeafKey/object.json`
 $ tss2_setdescription -p /P_ECCP256SHA256/HS/SRK/LeafKey -i "This is a leaf key"
 
 # get the description
