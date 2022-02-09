@@ -1678,6 +1678,7 @@ $ tpm2_checkquote -g sha256 -u rsakey.pem -q $QUALIFICATION -m quote.bin -s sign
 Example using an event log:
 <!--
 eventlog syntax check TCG spec: PC Client Platform Firmware Profile, 10 Event Logging
+and checkout https://trustedcomputinggroup.org/wp-content/uploads/TCG_IWG_CEL_v1_r0p35_11july2021.pdf
 -->
 ```
 # cold/warm reset the TPM to clear pcr index 0
@@ -1696,7 +1697,7 @@ $ cp ~/tpm2-tools/test/integration/fixtures/event.bin ./event.bin
 # read the event log
 $ tpm2_eventlog event.bin
 
-# extend the log EventNum 2 digest to the specified pcr
+# extend the log EventNum 1 digest to the pcr
 $ tpm2_pcrextend 0:sha256=660375b3c94d47f04e30912dd931b28532d313271d1ae1bdead0a1b8f1276ed1
 
 # generate quote
@@ -3407,6 +3408,49 @@ Immediately after `tss2_provision` you should see:
     - `/P_RSA2048SHA256/HE/EK`: Endorsement key
 - `/P_RSA2048SHA256/HN`: Null hierarchy
 
+## PCR
+
+Read PCR:
+```
+$ tss2_pcrread -x 0 -f -o pcr.bin -l pcr.log
+$ xxd pcr.bin
+$ cat pcr.log
+
+# clean up
+$ rm pcr.*
+```
+
+Extend value to PCR without log data:
+```
+# extend data to PCR. The data will be hashed using the respective PCR’s hash algorithm
+$ echo "some data" > data
+$ tss2_pcrextend -x 23 -i data
+
+# read
+$ tss2_pcrread -x 23 -f -o pcr.bin
+$ xxd pcr.bin
+
+# clean up
+$ rm data
+```
+
+<!--
+to-do:
+
+Extend value to PCR with log data:
+```
+# make a copy of the sample event log
+$ cp ~/tpm2-tools/test/integration/fixtures/event.bin ./event.bin
+
+# read the event log
+$ tpm2_eventlog event.bin
+
+$ tss2_pcrextend -x 0 -i data --logData xxxx
+
+# clean up
+$ rm data
+```
+-->
 
 ## Quote
 
