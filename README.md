@@ -3090,10 +3090,10 @@ One-time provision:
 
 1. Recommended change in `/usr/local/etc/tpm2-tss/fapi-config.json`:
     - Move all directories to user space, hence avoid access permission issues and `double free or corruption` regression
-    - Change the profile to `P_ECCP256SHA256` instead of `P_RSA2048SHA256` to improve the performance. You may also update the `tcti` parameter to switch between hardware or simulated TPM:
+    - Profile can be `P_RSA2048SHA256` or `P_ECCP256SHA256`. You may use `P_ECCP256SHA256` for better performance. You may also update the `tcti` parameter to switch between hardware or simulated TPM:
     ```
     {
-        "profile_name": "P_ECCP256SHA256",
+        "profile_name": "P_RSA2048SHA256",
         "profile_dir": "/usr/local/etc/tpm2-tss/fapi-profiles/",
         "user_dir": "/home/pi/.local/share/tpm2-tss/user/keystore/",
         "system_dir": "/home/pi/.local/share/tpm2-tss/system/keystore/",
@@ -3106,7 +3106,7 @@ One-time provision:
     For validation use:
     $ sudo su -c 'rm /usr/local/etc/tpm2-tss/fapi-config.json'
     $ sudo su -c 'echo "{" > /usr/local/etc/tpm2-tss/fapi-config.json'
-    $ sudo su -c 'echo "     \"profile_name\": \"P_ECCP256SHA256\"," >> /usr/local/etc/tpm2-tss/fapi-config.json'
+    $ sudo su -c 'echo "     \"profile_name\": \"P_RSA2048SHA256\"," >> /usr/local/etc/tpm2-tss/fapi-config.json'
     $ sudo su -c 'echo "     \"profile_dir\": \"/usr/local/etc/tpm2-tss/fapi-profiles/\"," >> /usr/local/etc/tpm2-tss/fapi-config.json'
     $ sudo su -c 'echo "     \"user_dir\": \"/home/pi/.local/share/tpm2-tss/user/keystore/\"," >> /usr/local/etc/tpm2-tss/fapi-config.json'
     $ sudo su -c 'echo "     \"system_dir\": \"/home/pi/.local/share/tpm2-tss/system/keystore/\"," >> /usr/local/etc/tpm2-tss/fapi-config.json'
@@ -3141,40 +3141,63 @@ $ tss2_changeauth
 
 ```
 # create a key without auth value
-$ tss2_createkey -p /P_ECCP256SHA256/HS/SRK/LeafKey1 -t "decrypt,sign" -a ""
+$ tss2_createkey -p /P_RSA2048SHA256/HS/SRK/LeafKey1 -t "decrypt,sign" -a ""
 
 # create a key with auth value
-$ tss2_createkey -p /P_ECCP256SHA256/HS/SRK/LeafKey2 -t "decrypt,sign" -a "pass123"
+$ tss2_createkey -p /P_RSA2048SHA256/HS/SRK/LeafKey2 -t "decrypt,sign" -a "pass123"
 
 # create a persistent key
-$ tss2_createkey -p /P_ECCP256SHA256/HS/SRK/LeafKey3 -t "decrypt,sign,0x81000002" -a ""
+$ tss2_createkey -p /P_RSA2048SHA256/HS/SRK/LeafKey3 -t "decrypt,sign,0x81000002" -a ""
 
 # clean up
-$ tss2_delete -p /P_ECCP256SHA256/HS/SRK/LeafKey1
-$ tss2_delete -p /P_ECCP256SHA256/HS/SRK/LeafKey2
-$ tss2_delete -p /P_ECCP256SHA256/HS/SRK/LeafKey3
+$ tss2_delete -p /P_RSA2048SHA256/HS/SRK/LeafKey1
+$ tss2_delete -p /P_RSA2048SHA256/HS/SRK/LeafKey2
+$ tss2_delete -p /P_RSA2048SHA256/HS/SRK/LeafKey3
 ```
 
 Location of keys in metadata store:
 ```
-# user key: /home/pi/.local/share/tpm2-tss/user/keystore/P_ECCP256SHA256/HS/SRK/
-$ tss2_createkey -p /P_ECCP256SHA256/HS/SRK/LeafKey1 -t "decrypt,sign" -a ""
+# user key: /home/pi/.local/share/tpm2-tss/user/keystore/P_RSA2048SHA256/HS/SRK/
+$ tss2_createkey -p /P_RSA2048SHA256/HS/SRK/LeafKey1 -t "decrypt,sign" -a ""
 
-# system key: /home/pi/.local/share/tpm2-tss/system/keystore/P_ECCP256SHA256/HS/SRK/
+# system key: /home/pi/.local/share/tpm2-tss/system/keystore/P_RSA2048SHA256/HS/SRK/
 # system: Stores the data blobs and metadata for a created key or seal in the system-wide directory instead of user’s personal directory.
-$ tss2_createkey -p /P_ECCP256SHA256/HS/SRK/LeafKey2 -t "system,decrypt,sign" -a ""
+$ tss2_createkey -p /P_RSA2048SHA256/HS/SRK/LeafKey2 -t "system,decrypt,sign" -a ""
 
 # clean up
-$ tss2_delete -p /P_ECCP256SHA256/HS/SRK/LeafKey1
-$ tss2_delete -p /P_ECCP256SHA256/HS/SRK/LeafKey2
+$ tss2_delete -p /P_RSA2048SHA256/HS/SRK/LeafKey1
+$ tss2_delete -p /P_RSA2048SHA256/HS/SRK/LeafKey2
 ```
 
 ## Delete Key
 
 ```
-$ tss2_createkey -p /P_ECCP256SHA256/HS/SRK/LeafKey -a ""
-$ tss2_delete -p /P_ECCP256SHA256/HS/SRK/LeafKey
+$ tss2_createkey -p /P_RSA2048SHA256/HS/SRK/LeafKey -a ""
+$ tss2_delete -p /P_RSA2048SHA256/HS/SRK/LeafKey
 ```
+
+## Encryption & Decryption
+
+This section is for P_RSA2048SHA256 only.
+
+```
+# create key
+$ tss2_createkey -p /P_RSA2048SHA256/HS/SRK/LeafKey -a ""
+
+# get random data
+$ echo "some secret" > secret.clear
+
+# use TPM for encryption
+$ tss2_encrypt -p /P_RSA2048SHA256/HS/SRK/LeafKey -i secret.clear -o secret1.cipher
+
+# use OpenSSL for encryption
+
+
+# decryption
+$ tss2_decrypt -p /P_RSA2048SHA256/HS/SRK/LeafKey -i secret1.cipher -o secret1.decipher
+$ diff secret1.decipher secret.clear
+
+``` 
 
 ## Get Info
 
@@ -3198,66 +3221,66 @@ $ rm random.bin
 ## Set/Get App Data
 
 ```
-$ tss2_createkey -p /P_ECCP256SHA256/HS/SRK/LeafKey -a ""
+$ tss2_createkey -p /P_RSA2048SHA256/HS/SRK/LeafKey -a ""
 
 # associate an arbitrary data blob with a given object
-# the data will be stored in plain in `/home/pi/.local/share/tpm2-tss/user/keystore/P_ECCP256SHA256/HS/SRK/LeafKey/object.json`
+# the data will be stored in plain in `/home/pi/.local/share/tpm2-tss/user/keystore/P_RSA2048SHA256/HS/SRK/LeafKey/object.json`
 $ tss2_getrandom -n 32 -f -o data-in.bin
-$ tss2_setappdata -p /P_ECCP256SHA256/HS/SRK/LeafKey -i data-in.bin
+$ tss2_setappdata -p /P_RSA2048SHA256/HS/SRK/LeafKey -i data-in.bin
 
 # get the data
-$ tss2_getappdata -p /P_ECCP256SHA256/HS/SRK/LeafKey -f -o data-out.bin
+$ tss2_getappdata -p /P_RSA2048SHA256/HS/SRK/LeafKey -f -o data-out.bin
 $ diff data-in.bin data-out.bin
 
 # remove the data
-$ tss2_setappdata -p /P_ECCP256SHA256/HS/SRK/LeafKey
+$ tss2_setappdata -p /P_RSA2048SHA256/HS/SRK/LeafKey
 
 # clean up
-$ tss2_delete -p /P_ECCP256SHA256/HS/SRK/LeafKey
+$ tss2_delete -p /P_RSA2048SHA256/HS/SRK/LeafKey
 $ rm data-in.bin data-out.bin
 ```
 
 ## Set/Get Certificate
 
 ```
-$ tss2_createkey -p /P_ECCP256SHA256/HS/SRK/LeafKey -a ""
+$ tss2_createkey -p /P_RSA2048SHA256/HS/SRK/LeafKey -a ""
 
 # create a dummy certificate
 $ openssl req -x509 -sha256 -nodes -days 365 -subj "/CN=Dummy/O=Infineon/C=SG" -newkey rsa:2048 -keyout dummy.key -out dummy-in.crt
 
 # associate a certificate (PEM encoding) with a given object
-# the certificate will be stored in plain in `/home/pi/.local/share/tpm2-tss/user/keystore/P_ECCP256SHA256/HS/SRK/LeafKey/object.json`
-$ tss2_setcertificate -p /P_ECCP256SHA256/HS/SRK/LeafKey --x509certData dummy-in.crt
+# the certificate will be stored in plain in `/home/pi/.local/share/tpm2-tss/user/keystore/P_RSA2048SHA256/HS/SRK/LeafKey/object.json`
+$ tss2_setcertificate -p /P_RSA2048SHA256/HS/SRK/LeafKey --x509certData dummy-in.crt
 
 # get the certificate
-$ tss2_getcertificate -p /P_ECCP256SHA256/HS/SRK/LeafKey -o dummy-out.crt
+$ tss2_getcertificate -p /P_RSA2048SHA256/HS/SRK/LeafKey -o dummy-out.crt
 $ diff dummy-in.crt dummy-out.crt
 
 # remove the certificate
-$ tss2_setcertificate -p /P_ECCP256SHA256/HS/SRK/LeafKey
+$ tss2_setcertificate -p /P_RSA2048SHA256/HS/SRK/LeafKey
 
 # clean up
-$ tss2_delete -p /P_ECCP256SHA256/HS/SRK/LeafKey
+$ tss2_delete -p /P_RSA2048SHA256/HS/SRK/LeafKey
 $ rm dummy.key dummy-in.crt dummy-out.crt
 ```
 
 ## Set/Get Description
 
 ```
-$ tss2_createkey -p /P_ECCP256SHA256/HS/SRK/LeafKey -a ""
+$ tss2_createkey -p /P_RSA2048SHA256/HS/SRK/LeafKey -a ""
 
 # assign a human readable description to an object in the metadata store
-# the description will be stored in plain in `/home/pi/.local/share/tpm2-tss/user/keystore/P_ECCP256SHA256/HS/SRK/LeafKey/object.json`
-$ tss2_setdescription -p /P_ECCP256SHA256/HS/SRK/LeafKey -i "This is a leaf key"
+# the description will be stored in plain in `/home/pi/.local/share/tpm2-tss/user/keystore/P_RSA2048SHA256/HS/SRK/LeafKey/object.json`
+$ tss2_setdescription -p /P_RSA2048SHA256/HS/SRK/LeafKey -i "This is a leaf key"
 
 # get the description
-$ tss2_getdescription -p /P_ECCP256SHA256/HS/SRK/LeafKey -o -
+$ tss2_getdescription -p /P_RSA2048SHA256/HS/SRK/LeafKey -o -
 
 # remove the description
-$ tss2_setdescription -p /P_ECCP256SHA256/HS/SRK/LeafKey
+$ tss2_setdescription -p /P_RSA2048SHA256/HS/SRK/LeafKey
 
 # clean up
-$ tss2_delete -p /P_ECCP256SHA256/HS/SRK/LeafKey
+$ tss2_delete -p /P_RSA2048SHA256/HS/SRK/LeafKey
 ```
 
 ## List Objects
@@ -3269,12 +3292,12 @@ $ tss2_list
 ```
 
 Immediately after `tss2_provision` you should see:
-- `/P_ECCP256SHA256/HS`: Storage hierarchy
-    - `/P_ECCP256SHA256/HS/SRK`: Storage root key (primary key)
-- `/P_ECCP256SHA256/LOCKOUT`: Lockout hierarchy
-- `/P_ECCP256SHA256/HE`: Endorsement hierarchy
-    - `/P_ECCP256SHA256/HE/EK`: Endorsement key
-- `/P_ECCP256SHA256/HN`: Null hierarchy
+- `/P_RSA2048SHA256/HS`: Storage hierarchy
+    - `/P_RSA2048SHA256/HS/SRK`: Storage root key (primary key)
+- `/P_RSA2048SHA256/LOCKOUT`: Lockout hierarchy
+- `/P_RSA2048SHA256/HE`: Endorsement hierarchy
+    - `/P_RSA2048SHA256/HE/EK`: Endorsement key
+- `/P_RSA2048SHA256/HN`: Null hierarchy
 
 
 # Validation Framework
