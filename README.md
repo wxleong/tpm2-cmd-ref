@@ -3525,3 +3525,11 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 # To-dos
 
 Look for `to-do` in the raw format.
+
+<!--
+to-do:
+- fapi NV
+- fapi event log
+- fapi import of key (/ext/key123) and policy (/policy/policy123)
+  https://trustedcomputinggroup.org/resource/tcg-tss-json/
+-->
