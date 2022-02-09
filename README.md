@@ -3086,6 +3086,8 @@ TCG Software Stack 2.0 (TSS 2.0) Specification Structure:
 
 ## Provision
 
+One-time provision:
+
 1. Recommended change in `/usr/local/etc/tpm2-tss/fapi-config.json`:
     - Move all directories to user space, hence avoid access permission issues and `double free or corruption` regression
     - Change the profile to `P_ECCP256SHA256` instead of `P_RSA2048SHA256` to improve the performance. You may also update the `tcti` parameter to switch between hardware or simulated TPM:
@@ -3128,6 +3130,95 @@ TCG Software Stack 2.0 (TSS 2.0) Specification Structure:
     ```
     $ tss2_provision
     ```
+
+## Change Auth
+
+```
+$ tss2_changeauth
+```
+
+## Create Key
+
+```
+# create a key without auth value
+$ tss2_createkey -p /P_ECCP256SHA256/HS/SRK/LeafKey1 -t "decrypt,sign" -a ""
+
+# create a key with auth value
+$ tss2_createkey -p /P_ECCP256SHA256/HS/SRK/LeafKey2 -t "decrypt,sign" -a "pass123"
+
+# create a persistent key
+$ tss2_createkey -p /P_ECCP256SHA256/HS/SRK/LeafKey3 -t "decrypt,sign,0x81000002" -a ""
+
+# clean up
+$ tss2_delete -p /P_ECCP256SHA256/HS/SRK/LeafKey1
+$ tss2_delete -p /P_ECCP256SHA256/HS/SRK/LeafKey2
+$ tss2_delete -p /P_ECCP256SHA256/HS/SRK/LeafKey3
+```
+
+Location of keys in metadata store:
+```
+# user key: /home/pi/.local/share/tpm2-tss/user/keystore/P_ECCP256SHA256/HS/SRK/
+$ tss2_createkey -p /P_ECCP256SHA256/HS/SRK/LeafKey1 -t "decrypt,sign" -a ""
+
+# system key: /home/pi/.local/share/tpm2-tss/system/keystore/P_ECCP256SHA256/HS/SRK/
+# system: Stores the data blobs and metadata for a created key or seal in the system-wide directory instead of user’s personal directory.
+$ tss2_createkey -p /P_ECCP256SHA256/HS/SRK/LeafKey2 -t "system,decrypt,sign" -a ""
+
+# clean up
+$ tss2_delete -p /P_ECCP256SHA256/HS/SRK/LeafKey1
+$ tss2_delete -p /P_ECCP256SHA256/HS/SRK/LeafKey2
+```
+
+## Delete Key
+
+```
+$ tss2_createkey -p /P_ECCP256SHA256/HS/SRK/LeafKey -a ""
+$ tss2_delete -p /P_ECCP256SHA256/HS/SRK/LeafKey
+```
+
+## Set/Get Description
+
+```
+$ tss2_createkey -p /P_ECCP256SHA256/HS/SRK/LeafKey -a ""
+
+# assign a human readable description to an object in the metadata store
+# the description will appear in `/home/pi/.local/share/tpm2-tss/user/keystore/P_ECCP256SHA256/HS/SRK/LeafKey/object.json`
+$ tss2_setdescription -p /P_ECCP256SHA256/HS/SRK/LeafKey -i "This is a leaf key"
+
+# get the description
+$ tss2_getdescription -p /P_ECCP256SHA256/HS/SRK/LeafKey -o -
+
+# clean up
+$ tss2_delete -p /P_ECCP256SHA256/HS/SRK/LeafKey
+```
+
+## Get Info
+
+Get TPM capabilities:
+```
+$ tss2_getinfo -o -
+
+# or
+
+$ tss2_getinfo -o info.txt
+```
+
+## List Objects
+
+Enumerates and show all objects in the FAPI metadata store:
+
+```
+$ tss2_list
+```
+
+Immediately after `tss2_provision` you should see:
+- `/P_ECCP256SHA256/HS`: Storage hierarchy
+    - `/P_ECCP256SHA256/HS/SRK`: Storage root key (primary key)
+- `/P_ECCP256SHA256/LOCKOUT`: Lockout hierarchy
+- `/P_ECCP256SHA256/HE`: Endorsement hierarchy
+    - `/P_ECCP256SHA256/HE/EK`: Endorsement key
+- `/P_ECCP256SHA256/HN`: Null hierarchy
+
 
 # Validation Framework
 
