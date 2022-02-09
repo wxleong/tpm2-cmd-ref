@@ -3197,6 +3197,10 @@ $ tss2_encrypt -p /P_RSA2048SHA256/HS/SRK/LeafKey -i secret.clear -o secret1.cip
 $ tss2_decrypt -p /P_RSA2048SHA256/HS/SRK/LeafKey -i secret1.cipher -o secret1.decipher
 $ diff secret1.decipher secret.clear
 
+# clean up
+$ tss2_delete -p /P_RSA2048SHA256/HS/SRK/LeafKey
+$ rm secret.clear secret1.*
+
 ``` 
 
 ## Get Info
@@ -3223,6 +3227,19 @@ $ openssl x509 -inform pem -in ek.crt -text
 $ tss2_getrandom -n 32 --hex -o -
 $ tss2_getrandom -n 32 -f -o random.bin
 $ rm random.bin
+```
+
+## Get TPM Blob
+
+```
+$ tss2_createkey -p /P_RSA2048SHA256/HS/SRK/LeafKey -a ""
+
+# get TPM2B_PUBLIC, TPM2B_PRIVATE, and policy
+$ tss2_gettpmblobs -p /P_RSA2048SHA256/HS/SRK/LeafKey -f -u key.pub -r key.priv --policy key.policy
+
+# clean up
+$ tss2_delete -p /P_RSA2048SHA256/HS/SRK/LeafKey
+$ rm key.*
 ```
 
 ## Set/Get App Data
