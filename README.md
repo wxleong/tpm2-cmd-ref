@@ -3274,7 +3274,7 @@ $ rm data-in.bin data-out.bin
 ```
 $ tss2_createkey -p /P_RSA2048SHA256/HS/SRK/LeafKey -a ""
 
-# create a dummy certificate
+# create a dummy certificate (follow the CSR flow to obtain a valid certificate)
 $ openssl req -x509 -sha256 -nodes -days 365 -subj "/CN=Dummy/O=Infineon/C=SG" -newkey rsa:2048 -keyout dummy.key -out dummy-in.crt
 $ openssl x509 -inform pem -in dummy-in.crt -text
 
