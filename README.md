@@ -3134,10 +3134,9 @@ One-time provision:
     $ sudo su -c 'echo "}" >> /usr/local/etc/tpm2-tss/fapi-config.json'
     $ cat /usr/local/etc/tpm2-tss/fapi-config.json
     -->
-2. Reset the FAPI database by emptying the user_dir and system_dir:
+2. Reset the FAPI database:
     ```
-    $ sudo rm -rf /home/pi/.local/share/tpm2-tss/user/keystore
-    $ sudo rm -rf /home/pi/.local/share/tpm2-tss/system/keystore
+    $ sudo rm -rf /home/pi/.local/share/tpm2-tss
     ```
 3. Clear TPM:
     ```
@@ -3483,49 +3482,22 @@ Immediately after `tss2_provision` you should see:
 
 ## PCR
 
-Read PCR:
-```
-$ tss2_pcrread -x 0 -f -o pcr.bin -l pcr.log
-$ xxd pcr.bin
-$ cat pcr.log
-
-# clean up
-$ rm pcr.*
-```
-
-Extend value to PCR without log data:
+<!--
+The data file binary in hex is "736f6d6520646174610a". You will find it in the `pcr.log`.
+-->
 ```
 # extend data to PCR. The data will be hashed using the respective PCR’s hash algorithm
 $ echo "some data" > data
 $ tss2_pcrextend -x 23 -i data
 
 # read
-$ tss2_pcrread -x 23 -f -o pcr.bin
+$ tss2_pcrread -x 23 -f -o pcr.bin -l pcr.log
 $ xxd pcr.bin
+$ cat pcr.log
 
 # clean up
-$ rm data
+$ rm data pcr.*
 ```
-
-<!--
-to-do:
-
-~/tpm2-tools/test/integration/fixtures/event.bin will not work, tss2_pcrextend requires JSON encoded event log
-
-Extend value to PCR with log data:
-```
-# make a copy of the sample event log
-$ cp ~/tpm2-tools/test/integration/fixtures/event.bin ./event.bin
-
-# read the event log
-$ tpm2_eventlog event.bin
-
-$ tss2_pcrextend -x 16 --logData event.bin
-
-# clean up
-$ rm data
-```
--->
 
 ## Quote
 
