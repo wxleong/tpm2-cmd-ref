@@ -3486,7 +3486,7 @@ Immediately after `tss2_provision` you should see:
 The data file binary in hex is "736f6d6520646174610a". You will find it in the `pcr.log`.
 -->
 ```
-# extend data to PCR. The data will be hashed using the respective PCR’s hash algorithm
+# extend some data to PCR. The data will be hashed using the respective PCR’s hash algorithm
 $ echo "some data" > data
 $ tss2_pcrextend -x 23 -i data
 
@@ -3501,19 +3501,28 @@ $ rm data pcr.*
 
 ## Quote
 
+<!--
+If you see error "The digest computed from event list does not match the attest.", most likely is because eventlog and PCR 23 digest is out of sync, reset PCR 23 and re-provision fapi
+
+Is possible to select multiple pcrs: -x "0,16,23"
+-->
 ```
 $ tss2_createkey -p /P_RSA2048SHA256/HS/SRK/LeafKey -a ""
 
+# extend some data to PCR
+$ echo "some data" > data
+$ tss2_pcrextend -x 23 -i data
+
 # generate quote
 $ tss2_getrandom -n 16 -f -o quote.qualifying
-$ tss2_quote -p /P_RSA2048SHA256/HS/SRK/LeafKey -x "0,16" -Q quote.qualifying -f -o quote.sig -l quote.log -c key.crt -q quote.info
+$ tss2_quote -p /P_RSA2048SHA256/HS/SRK/LeafKey -x "23" -Q quote.qualifying -f -o quote.sig -l quote.log -c key.crt -q quote.info
 
 # verify quote
 $ tss2_verifyquote -k /P_RSA2048SHA256/HS/SRK/LeafKey -Q quote.qualifying -q quote.info -i quote.sig -l quote.log
 
 # clean up
 $ tss2_delete -p /P_RSA2048SHA256/HS/SRK/LeafKey
-$ rm quote.* key.*
+$ rm quote.* key.* data
 ```
 
 # Validation Framework
