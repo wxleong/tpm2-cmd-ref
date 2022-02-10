@@ -3329,6 +3329,24 @@ $ rm rsa.* secret.*
 ```
 -->
 
+Import policy:
+```
+# get a sample policy
+$ cp ~/tpm2-tss/test/data/fapi/policy/pol_signed.json .
+
+# import the policy
+$ tss2_import -p /policy/pol_signed -i pol_signed.json
+
+# clean up
+$ tss2_delete -p /policy/pol_signed
+```
+
+## Policy
+
+<!--
+Find the list of policy in `TCG TSS 2.0 JSON Data Types and Policy Language Specification` (https://trustedcomputinggroup.org/resource/tcg-tss-json/)
+-->
+
 ## Seal/Unseal
 
 ```
