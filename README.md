@@ -87,14 +87,14 @@ OPTIGA™ TPM 2.0 command reference and code examples.
     - **[Get Random](#get-random-1)**
     - **[Get TPM Blob](#get-tpm-blob)**
     - **[Import](#import)**
+    - **[List Objects](#list-objects)**
+    - **[PCR](#pcr-1)**
+    - **[Quote](#quote-1)**
     - **[Seal/Unseal](#sealunseal)**
     - **[Set/Get App Data](#setget-app-data)**
     - **[Set/Get Certificate](#setget-certificate)**
     - **[Set/Get Description](#setget-description)**
     - **[Signing & Verification](#signing--verification-1)**
-    - **[List Objects](#list-objects)**
-    - **[PCR](#pcr-1)**
-    - **[Quote](#quote-1)**
 - **[Validation Framework](#validation-framework)**
 - **[References](#references)**
 - **[License](#license)**
@@ -3341,11 +3341,72 @@ $ tss2_import -p /policy/pol_signed -i pol_signed.json
 $ tss2_delete -p /policy/pol_signed
 ```
 
+## List Objects
+
+Enumerates and show all objects in the FAPI metadata store:
+
+```
+$ tss2_list
+```
+
+Immediately after `tss2_provision` you should see:
+- `/P_RSA2048SHA256/HS`: Storage hierarchy
+    - `/P_RSA2048SHA256/HS/SRK`: Storage root key (primary key)
+- `/P_RSA2048SHA256/LOCKOUT`: Lockout hierarchy
+- `/P_RSA2048SHA256/HE`: Endorsement hierarchy
+    - `/P_RSA2048SHA256/HE/EK`: Endorsement key
+- `/P_RSA2048SHA256/HN`: Null hierarchy
+
+## PCR
+
+<!--
+The data file binary in hex is "736f6d6520646174610a". You will find it in the `pcr.log`.
+-->
+```
+# extend some data to PCR. The data will be hashed using the respective PCR’s hash algorithm
+$ echo "some data" > data
+$ tss2_pcrextend -x 23 -i data
+
+# read
+$ tss2_pcrread -x 23 -f -o pcr.bin -l pcr.log
+$ xxd pcr.bin
+$ cat pcr.log
+
+# clean up
+$ rm data pcr.*
+```
+
 ## Policy
 
 <!--
 Find the list of policy in `TCG TSS 2.0 JSON Data Types and Policy Language Specification` (https://trustedcomputinggroup.org/resource/tcg-tss-json/)
 -->
+
+## Quote
+
+<!--
+If you see error "The digest computed from event list does not match the attest.", most likely is because eventlog and PCR 23 digest is out of sync, reset PCR 23 and re-provision fapi
+
+Is possible to select multiple pcrs: -x "0,16,23"
+-->
+```
+$ tss2_createkey -p /P_RSA2048SHA256/HS/SRK/LeafKey -a ""
+
+# extend some data to PCR
+$ echo "some data" > data
+$ tss2_pcrextend -x 23 -i data
+
+# generate quote
+$ tss2_getrandom -n 16 -f -o quote.qualifying
+$ tss2_quote -p /P_RSA2048SHA256/HS/SRK/LeafKey -x "23" -Q quote.qualifying -f -o quote.sig -l quote.log -c key.crt -q quote.info
+
+# verify quote
+$ tss2_verifyquote -k /P_RSA2048SHA256/HS/SRK/LeafKey -Q quote.qualifying -q quote.info -i quote.sig -l quote.log
+
+# clean up
+$ tss2_delete -p /P_RSA2048SHA256/HS/SRK/LeafKey
+$ rm quote.* key.* data
+```
 
 ## Seal/Unseal
 
@@ -3480,67 +3541,6 @@ For profile `P_ECCP256SHA256`:
 # clean up
 % tss2_delete -p /P_ECCP256SHA256/HS/SRK/LeafKey
 % rm message message.* key.*
-```
-
-## List Objects
-
-Enumerates and show all objects in the FAPI metadata store:
-
-```
-$ tss2_list
-```
-
-Immediately after `tss2_provision` you should see:
-- `/P_RSA2048SHA256/HS`: Storage hierarchy
-    - `/P_RSA2048SHA256/HS/SRK`: Storage root key (primary key)
-- `/P_RSA2048SHA256/LOCKOUT`: Lockout hierarchy
-- `/P_RSA2048SHA256/HE`: Endorsement hierarchy
-    - `/P_RSA2048SHA256/HE/EK`: Endorsement key
-- `/P_RSA2048SHA256/HN`: Null hierarchy
-
-## PCR
-
-<!--
-The data file binary in hex is "736f6d6520646174610a". You will find it in the `pcr.log`.
--->
-```
-# extend some data to PCR. The data will be hashed using the respective PCR’s hash algorithm
-$ echo "some data" > data
-$ tss2_pcrextend -x 23 -i data
-
-# read
-$ tss2_pcrread -x 23 -f -o pcr.bin -l pcr.log
-$ xxd pcr.bin
-$ cat pcr.log
-
-# clean up
-$ rm data pcr.*
-```
-
-## Quote
-
-<!--
-If you see error "The digest computed from event list does not match the attest.", most likely is because eventlog and PCR 23 digest is out of sync, reset PCR 23 and re-provision fapi
-
-Is possible to select multiple pcrs: -x "0,16,23"
--->
-```
-$ tss2_createkey -p /P_RSA2048SHA256/HS/SRK/LeafKey -a ""
-
-# extend some data to PCR
-$ echo "some data" > data
-$ tss2_pcrextend -x 23 -i data
-
-# generate quote
-$ tss2_getrandom -n 16 -f -o quote.qualifying
-$ tss2_quote -p /P_RSA2048SHA256/HS/SRK/LeafKey -x "23" -Q quote.qualifying -f -o quote.sig -l quote.log -c key.crt -q quote.info
-
-# verify quote
-$ tss2_verifyquote -k /P_RSA2048SHA256/HS/SRK/LeafKey -Q quote.qualifying -q quote.info -i quote.sig -l quote.log
-
-# clean up
-$ tss2_delete -p /P_RSA2048SHA256/HS/SRK/LeafKey
-$ rm quote.* key.* data
 ```
 
 # Validation Framework
