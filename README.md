@@ -3510,6 +3510,8 @@ $ rm data
 <!--
 to-do:
 
+~/tpm2-tools/test/integration/fixtures/event.bin will not work, tss2_pcrextend requires JSON encoded event log
+
 Extend value to PCR with log data:
 ```
 # make a copy of the sample event log
@@ -3518,7 +3520,7 @@ $ cp ~/tpm2-tools/test/integration/fixtures/event.bin ./event.bin
 # read the event log
 $ tpm2_eventlog event.bin
 
-$ tss2_pcrextend -x 0 -i data --logData xxxx
+$ tss2_pcrextend -x 16 --logData event.bin
 
 # clean up
 $ rm data
