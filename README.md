@@ -78,6 +78,23 @@ OPTIGA™ TPM 2.0 command reference and code examples.
     - **[TPM Clear](#tpm-clear)**
 - **[Examples (FAPI)](#examples-fapi)**
     - **[Provision](#provision)**
+    - **[Change Auth](#change-auth)**
+    - **[Create Key](#create-key)**
+    - **[Delete Key](#delete-key)**
+    - **[Encryption & Decryption](#encryption--decryption-1)**
+    - **[Get Info](#get-info)**
+    - **[Get EK Certificate](#get-ek-certificate)**
+    - **[Get Random](#get-random-1)**
+    - **[Get TPM Blob](#get-tpm-blob)**
+    - **[Import](#import)**
+    - **[Seal/Unseal](#sealunseal)**
+    - **[Set/Get App Data](#setget-app-data)**
+    - **[Set/Get Certificate](#setget-certificate)**
+    - **[Set/Get Description](#setget-description)**
+    - **[Signing & Verification](#signing--verification-1)**
+    - **[List Objects](#list-objects)**
+    - **[PCR](#pcr-1)**
+    - **[Quote](#quote-1)**
 - **[Validation Framework](#validation-framework)**
 - **[References](#references)**
 - **[License](#license)**
