@@ -3257,6 +3257,62 @@ $ tss2_delete -p /P_RSA2048SHA256/HS/SRK/LeafKey
 $ rm key.*
 ```
 
+## Import
+
+Use imported public key for signature verification:
+```
+# create RSA key
+$ openssl genrsa -out rsa.priv.pem 2048
+$ openssl rsa -in rsa.priv.pem -pubout > rsa.pub.pem
+
+# create a message
+$ echo "some message" > message
+$ openssl dgst -sha256 -binary -out message.digest message
+
+# use OpenSSL for signing
+$ openssl dgst -sha256 -sign rsa.priv.pem -out message.sig message
+
+# import the public key
+$ tss2_import -p /ext/RsaPubKey -i rsa.pub.pem
+
+# use TPM for verification
+$ tss2_verifysignature -p /ext/RsaPubKey -d message.digest -i message.sig
+
+# clean up
+$ tss2_delete -p /ext/RsaPubKey
+$ rm rsa.* message message.*
+```
+
+<!--
+to-do: check if following is possible
+
+Use imported public key for encryption:
+```
+# create RSA key
+$ openssl genrsa -out rsa.priv.pem 2048
+$ openssl rsa -in rsa.priv.pem -pubout > rsa.pub.pem
+
+# create a message
+$ echo "some secret" > secret.clear
+
+# import the public key
+$ tss2_import -p /ext/RsaPubKey -i rsa.pub.pem
+
+# use TPM for encryption
+$ tss2_encrypt -p /ext/RsaPubKey -i secret.clear -o secret.cipher
+    ERROR:fapi:src/tss2-fapi/fapi_util.c:263:init_explicit_key_path() Hierarchy cannot be determined.
+    ERROR:fapi:src/tss2-fapi/fapi_util.c:510:get_explicit_key_path() init_explicit_key_path ErrorCode (0x0006001d)
+    ERROR:fapi:src/tss2-fapi/fapi_util.c:1555:ifapi_load_keys_async() Compute explicit path. ErrorCode (0x0006001d)
+    ERROR:fapi:src/tss2-fapi/api/Fapi_Encrypt.c:290:Fapi_Encrypt_Finish() Load keys. ErrorCode (0x0006001d)
+    ERROR:fapi:src/tss2-fapi/api/Fapi_Encrypt.c:126:Fapi_Encrypt() ErrorCode (0x0006001d) Data_Encrypt
+    Fapi_Encrypt(0x6001D) - fapi:The provided path is bad
+
+# clean up
+$ tss2_delete -p /ext/RsaPubKey
+$ rm rsa.* secret.*
+```
+-->
+
 ## Seal/Unseal
 
 ```
