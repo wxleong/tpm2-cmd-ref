@@ -3380,6 +3380,12 @@ $ rm data pcr.*
 
 <!--
 Find the list of policy in `TCG TSS 2.0 JSON Data Types and Policy Language Specification` (https://trustedcomputinggroup.org/resource/tcg-tss-json/)
+
+Examples:
+- Find the JSON encoded policy at https://github.com/tpm2-software/tpm2-tss/tree/master/test/data/fapi/policy
+- Search for the policy usage in https://github.com/tpm2-software/tpm2-tss/tree/master/test/integration
+
+to-do: policy examples
 -->
 
 ## Quote
