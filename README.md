@@ -1,3 +1,5 @@
+[![example workflow](https://github.com/wxleong/tpm2-cmd-ref/workflows/CI/badge.svg)](https://github.com/wxleong/tpm2-cmd-ref/actions)
+
 # Introduction
 
 OPTIGA™ TPM 2.0 command reference and code examples.
@@ -5,7 +7,7 @@ OPTIGA™ TPM 2.0 command reference and code examples.
 # Table of Contents
 
 - **[Prerequisites](#prerequisites)**
-- **[Setup on Ubuntu](#setup-on-ubuntu)**
+- **[Setup on Debian/Ubuntu](#setup-on-debianubuntu)**
 - **[Setup on Raspberry Pi](#setup-on-raspberry-pi)**
 - **[Behaviour of Microsoft TPM2.0 Simulator](#behaviour-of-microsoft-tpm20-simulator)**
 - **[Examples (SAPI/ESAPI)](#examples-sapiesapi)**
@@ -102,11 +104,11 @@ OPTIGA™ TPM 2.0 command reference and code examples.
 
 # Prerequisites
 
-- Tested with simulated TPM 2.0 on Ubuntu
+- Debian (buster, bullseye), Ubuntu (18.04, 20.04, 22.04)
 
 <!--
 - For simulated TPM 2.0, tested on: 
-  ```ignore
+  ```exclude
   $ lsb_release -a
   No LSB modules are available.
   Distributor ID:	Ubuntu
@@ -116,29 +118,46 @@ OPTIGA™ TPM 2.0 command reference and code examples.
 
   $ uname -a
   Linux ubuntu 5.8.0-59-generic #66~20.04.1-Ubuntu SMP Thu Jun 17 11:14:10 UTC 2021 x86_64 x86_64 x86_64 GNU/Linux
-  ```ignore
+  ```
 - For hardware TPM 2.0, tested on Raspberry Pi 4 Model B with Iridium 9670 TPM 2.0 board [[10]](#10). For detailed setup guide please visit [[8]](#8).
 -->
 
-# Setup on Ubuntu
+# Setup on Debian/Ubuntu
 
 Download package information:
-```
+```all
 $ sudo apt update
 ```
 
-Install dependencies:
-```
-$ sudo apt -y install autoconf-archive libcmocka0 libcmocka-dev procps iproute2 build-essential git pkg-config gcc libtool automake libssl-dev uthash-dev autoconf doxygen libjson-c-dev libini-config-dev libcurl4-openssl-dev python-yaml uuid-dev pandoc acl libglib2.0-dev xxd
+Install generic packages:
+```all
+$ sudo apt -y install autoconf-archive libcmocka0 libcmocka-dev procps iproute2 build-essential git pkg-config gcc libtool automake libssl-dev uthash-dev autoconf doxygen libjson-c-dev libini-config-dev libcurl4-openssl-dev uuid-dev pandoc acl libglib2.0-dev xxd
 ```
 
-Download the project:
+Install platform dependent packages for Ubuntu:18.04, Ubuntu:20.04:
+```ubuntu:18.04,ubuntu:20.04
+$ sudo apt -y install python-yaml 
 ```
-$ git clone -b develop-ci https://github.com/wxleong/tpm2-cmd-ref ~/tpm2-cmd-ref
+
+Install platform dependent packages for Ubuntu:22.04:
+```ubuntu:22.04
+$ git clone -b OpenSSL_1_1_1f https://github.com/openssl/openssl ~/openssl
+$ cd ~/openssl
+$ ./config
+$ make -j$(nproc)
+$ sudo make install
+$ sudo ldconfig
+$ sudo rm /usr/bin/openssl
+$ sudo ln -s /usr/local/bin/openssl /usr/bin/openssl
+```
+
+Download this project for later use:
+```all
+$ git clone https://github.com/wxleong/tpm2-cmd-ref ~/tpm2-cmd-ref
 ```
 
 Install tpm2-tss:
-```
+```all
 $ git clone https://github.com/tpm2-software/tpm2-tss ~/tpm2-tss
 $ cd ~/tpm2-tss
 $ git checkout 3.1.0
@@ -150,7 +169,7 @@ $ sudo ldconfig
 ```
 
 Install tpm2-tools:
-```
+```all
 $ git clone https://github.com/tpm2-software/tpm2-tools ~/tpm2-tools
 $ cd ~/tpm2-tools
 $ git checkout 5.2
@@ -162,7 +181,7 @@ $ sudo ldconfig
 ```
 
 Install tpm2-abrmd:
-```
+```all
 $ git clone https://github.com/tpm2-software/tpm2-abrmd ~/tpm2-abrmd
 $ cd ~/tpm2-abrmd
 $ git checkout 2.4.1
@@ -174,7 +193,7 @@ $ sudo ldconfig
 ```
 
 Install tpm2-tss-engine:
-```
+```all
 $ git clone https://github.com/tpm2-software/tpm2-tss-engine ~/tpm2-tss-engine
 $ cd ~/tpm2-tss-engine
 $ git checkout v1.1.0
@@ -186,7 +205,7 @@ $ sudo ldconfig
 ```
 
 Install Microsoft TPM2.0 simulator:
-```
+```all
 $ git clone https://github.com/microsoft/ms-tpm-20-ref ~/ms-tpm-20-ref
 $ cd ~/ms-tpm-20-ref/TPMCmd
 $ ./bootstrap
@@ -197,7 +216,7 @@ $ sudo make install
 
 Test installation:
 1. Start TPM simulator:
-    ```
+    ```all
     $ cd ~
     $ tpm2-simulator &
     LIBRARY_COMPATIBILITY_CHECK is ON
@@ -211,15 +230,17 @@ Test installation:
     MAX_CONTEXT_SIZE can be reduced to 1264 (1344)
     TPM command server listening on port 2321
     Platform server listening on port 2322
+    $ sleep 5
     ```
 
 2. Start TPM resource manager:
-    ```
+    ```all
     $ tpm2-abrmd --allow-root --session --tcti=mssim &
+    $ sleep 5
     ```
 
 2. Set TCTI:
-    ```
+    ```all
     # for tpm2-tools
     $ export TPM2TOOLS_TCTI="tabrmd:bus_type=session"
     
@@ -228,12 +249,12 @@ Test installation:
     ```
 
 3. Perform TPM startup:
-    ```
+    ```all
     $ tpm2_startup -c
     ```
 
 4. Get random:
-    ```
+    ```all
     $ tpm2_getrandom --hex 16
     ```
 
@@ -242,13 +263,13 @@ Test installation:
 For detailed Raspberry Pi setup guide please visit [[8]](#8).
 
 You may explicitly set the TCTI to device node `tpm0` or `tpmrm0`:
-```ignore
+```exclude
 $ export TPM2TOOLS_TCTI="device:/dev/tpm0"
 $ export TPM2TSSENGINE_TCTI="device:/dev/tpm0"
-```ignore
+```
 
 Test installation:
-```
+```all
 $ tpm2_getrandom --hex 16
 ```
 
@@ -257,18 +278,18 @@ $ tpm2_getrandom --hex 16
 The Microsoft TPM2.0 simulator [[2]](#2) stores all persistent information in a file (`NVChip`). Find the file in the directory where you launched your simulator. If you wish to start fresh, erase the file before launching the simulator.
 
 Perform TPM startup after launching the simulator, otherwise, all subsequent commands will fail with the error code 0x100 (TPM not initialized by TPM2_Startup):
-```
+```all
 $ tpm2_startup -c
 ```
 
 Keep an eye on the TPM transient and session memory:
-```
+```all
 $ tpm2_getcap handles-transient
 $ tpm2_getcap handles-loaded-session
 ```
 
 Once it hit 3 handles, the next command may fail with the error code 0x902 (out of memory for object contexts) / 0x903 (out of memory for session contexts). To clear the transient memory:
-```
+```all
 $ tpm2_flushcontext -t
 $ tpm2_flushcontext -l
 ```
@@ -285,7 +306,7 @@ TCG Software Stack 2.0 (TSS 2.0) Specification Structure:
 
 Retrieve the session audit digest attestation data from the TPM. The attestation data includes the session audit digest and a signature over the session audit digest:
 
-```
+```all
 $ tpm2_createprimary -C e -g sha256 -G ecc -c primary_eh.ctx
 $ tpm2_create -C primary_eh.ctx -g sha256 -G ecc -u signing.key.pub -r signing.key.priv
 $ tpm2_load -C primary_eh.ctx -u signing.key.pub -r signing.key.priv -c signing.key.ctx
@@ -317,7 +338,7 @@ tpm2_getcommandauditdigest -c signing.key.ctx -g sha256 -m attest.out -s signatu
 <ins><b>tpm2_certify</b></ins>
 
 `tpm2_certify` proves that an object with a specific NAME is loaded in the TPM. By certifying that the object is loaded, the TPM warrants that a public area with a given Name is self consistent and associated with a valid sensitive area:
-```
+```all
 # Create a policy to restrict the usage of a signing key to only command TPM2_CC_Certify
 $ tpm2_startauthsession -S session.ctx
 $ tpm2_policycommandcode -S session.ctx -L policy.ctx TPM2_CC_Certify
@@ -355,7 +376,7 @@ The purpose of TPM2_CertifyX509 is to generate an X.509 certificate that proves 
 
 When an object is created, the TPM creates a creation data that describes the environment in which the object was created. The TPM also produces a ticket that will allow the TPM to validate that the creation data was generated by the TPM. In other words, this allows the TPM to certify that it created the Object (TPM2_CertifyCreation()). This is most useful when fixedTPM is CLEAR in the created object. An example:
 
-```
+```all
 $ tpm2_createprimary -C o -g sha256 -G ecc --creation-data creation.data -d creation.data.hash -t creation.ticket -c primary_sh.ctx
 $ tpm2_create -C primary_sh.ctx -g sha256 -G ecc -u signing.key.pub -r signing.key.priv
 $ tpm2_load -C primary_sh.ctx -u signing.key.pub -r signing.key.priv -c signing.key.ctx
@@ -366,7 +387,7 @@ $ tpm2_verifysignature -c signing.key.ctx -g sha256 -m attest.out -s signature.o
 ```
 
 Another example involving policy:
-```
+```all
 # Create a policy to restrict the usage of a signing key to only command TPM2_CC_CertifyCreation
 $ tpm2_startauthsession -S session.ctx
 $ tpm2_policycommandcode -S session.ctx -L policy.ctx TPM2_CC_CertifyCreation
@@ -388,7 +409,7 @@ $ tpm2_verifysignature -c signing.key.ctx -g sha256 -m attest.out -s signature.o
 
 Provides attestation of the contents of an NV index. An example:
 
-```
+```all
 $ dd bs=1 count=32 </dev/urandom >data
 $ tpm2_nvdefine 0x01000000 -s 32 -a "authread|authwrite"
 $ tpm2_nvwrite 0x01000000 -i data
@@ -409,7 +430,7 @@ $ tpm2_nvundefine 0x01000000 -C o
 ```
 
 Another example involving policy:
-```
+```all
 # Create a policy to restrict the usage of a signing key to only command TPM2_CC_CertifyCreation
 $ tpm2_startauthsession -S session.ctx
 $ tpm2_policycommandcode -S session.ctx -L policy.ctx TPM2_CC_NV_Certify
@@ -436,7 +457,7 @@ $ tpm2_nvundefine 0x01000000 -C o
 
 <ins><b>tpm2_readclock</b></ins>
 
-```
+```all
 $ tpm2_readclock
   time: 12286
   clock_info:
@@ -448,30 +469,30 @@ $ tpm2_readclock
 
 The command reads the current TPMS_TIME_INFO structure that contains the current setting of Time, Clock, Safe, resetCount, and restartCount:
 - Reset count: This counter shall increment on each TPM Reset. This counter shall be reset to zero by TPM2_Clear(). A TPM Reset is either an unorderly shutdown or an orderly shutdown:
-    ```ignore
+    ```exclude
     $ tpm2_shutdown -c
     < cold/warm reset >
     $ tpm2_startup -c
     $ tpm2_readclock
-    ```ignore
+    ```
 - Restart count: This counter shall increment by one for each TPM Restart or TPM Resume. The restartCount shall be reset to zero on a TPM Reset or TPM2_Clear(). A TPM Restart is:
-    ```ignore
+    ```exclude
     $ tpm2_shutdown
     < cold/warm reset >
     $ tpm2_startup -c
     $ tpm2_readclock
-    ```ignore
+    ```
     A TPM Resume is:
-    ```ignore
+    ```exclude
     $ tpm2_shutdown
     < cold/warm reset >
     $ tpm2_startup
     $ tpm2_readclock
-    ```ignore
+    ```
 - Clock: It is a time value in milliseconds that advances while the TPM is powered. The value shall be reset to zero by TPM2_Clear(). This value may be advanced by TPM2_ClockSet().
 
     Clock will be non-volatile but may have a volatile component that is updated every millisecond with the non-volatile component updated at a lower rate. The non-volatile component shall be updated no less frequently than every 222 milliseconds (~69.9 minutes). The update rate of the non-volatile portion of Clock shall be reported by command `tpm2_getcap properties-fixed` check property TPM_PT_CLOCK_UPDATE:
-    ```
+    ```all
     $ tpm2_getcap properties-fixed
       ...
       TPM2_PT_CLOCK_UPDATE:
@@ -484,7 +505,7 @@ The command reads the current TPMS_TIME_INFO structure that contains the current
 <ins><b>tpm2_setclock</b></ins>
 
 Sets the clock on the TPM to a time (milliseconds) in the future:
-```
+```all
 # print the clock
 $ tpm2_readclock
   time: 5097
@@ -507,12 +528,12 @@ $ tpm2_setclock $FUTURE
 ## Clear Control
 
 Read the disableClear attribute:
-```
+```all
 $ tpm2_getcap properties-variable | grep disableClear
 ```
 
 Disable clear:
-```
+```all
 $ tpm2_clearcontrol -C p s
 $ tpm2_getcap properties-variable | grep disableClear
 
@@ -521,7 +542,7 @@ $ tpm2_getcap properties-variable | grep disableClear
 ```
 
 Enable clear:
-```
+```all
 $ tpm2_clearcontrol -C p c
 $ tpm2_getcap properties-variable | grep disableClear
 
@@ -532,17 +553,17 @@ $ tpm2_clear -c p
 ## Create Keys
 
 Create primary key in platform hierarchy:
-```
+```all
 $ tpm2_createprimary -C p -g sha256 -G ecc -c primary_ph.ctx
 ```
 
 Create primary key in storage hierarchy:
-```
+```all
 $ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
 ```
 
 Create ordinary keys:
-```
+```all
 # RSA
 $ tpm2_create -C primary_sh.ctx -g sha256 -G rsa -u rsakey.pub -r rsakey.priv
 $ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -c rsakey.ctx
@@ -570,12 +591,12 @@ Before we start, understand the basic:
 - lockoutRecovery (TPM2_PT_LOCKOUT_RECOVERY): This value indicates the retry delay in seconds after an authorization failure using lockout auth
 
 Check the TPM lockout parameters:
-```
+```all
 $ tpm2_getcap properties-variable
 ```
 
 Set lockout auth:
-```
+```all
 $ tpm2_changeauth -c l lockout123
 ```
 
@@ -583,12 +604,12 @@ Set lockout parameters to:
 - maxTries = 5 tries
 - recoveryTime = 10 seconds
 - lockoutRecovery = 20 seconds
-```
+```all
 $ tpm2_dictionarylockout -s -n 5 -t 10 -l 20 -p lockout123
 ```
 
 To trigger a lockout:
-```ignore
+```exclude
 $ tpm2_createprimary -G ecc -c primary.ctx -p primary123
 $ tpm2_create -G ecc -C primary.ctx -P badauth -u key.pub -r key.priv
 WARNING:esys:src/tss2-esys/api/Esys_Create.c:398:Esys_Create_Finish() Received TPM Error 
@@ -615,29 +636,29 @@ WARNING:esys:src/tss2-esys/api/Esys_Create.c:398:Esys_Create_Finish() Received T
 ERROR:esys:src/tss2-esys/api/Esys_Create.c:134:Esys_Create() Esys Finish ErrorCode (0x00000921) 
 ERROR: Esys_Create(0x921) - tpm:warn(2.0): authorizations for objects subject to DA protection are not allowed at this time because the TPM is in DA lockout mode
 ERROR: Unable to run tpm2_create
-```ignore
+```
 
 To exit lockout state, wait for 10 seconds (recoveryTime), use lockout auth:
-```
+```all
 $ tpm2_dictionarylockout -c -p lockout123
 ```
 
 To trigger a lockout on the lockout auth:
-```ignore
+```exclude
 $ tpm2_dictionarylockout -c -p badauth
-```ignore
+```
 
 Wait for 20 seconds (lockoutRecovery) before you can try again.
 
 As a last resort, use `tpm2_clear -c p` to exit all lockout state:
-```
+```all
 $ tpm2_clear -c p
 ```
 
 ## Display TPM Capabilities
 
 Return a list of supported capability names:
-```
+```all
 $ tpm2_getcap -l
 - algorithms
 - commands
@@ -655,7 +676,7 @@ $ tpm2_getcap -l
 ```
 
 Find TPM 2.0 library specification revision [[9]](#9) by:
-```
+```all
 $ tpm2_getcap properties-fixed
 TPM2_PT_FAMILY_INDICATOR:
   raw: 0x322E3000
@@ -755,14 +776,14 @@ TPM2_PT_NV_BUFFER_MAX:
 ```
 
 Check what commands are supported:
-```
+```all
 $ tpm2_getcap commands
 ```
 
 ## EK Credential 
 
 Create EK and AK:
-```
+```all
 $ tpm2_createek -c 0x81010001 -G rsa -u ek.pub
 $ tpm2_createak -C 0x81010001 -c ak.ctx -u ak.pub -n ak.name
 $ tpm2_evictcontrol -C o -c ak.ctx 0x81010002
@@ -770,13 +791,13 @@ $ tpm2_getcap handles-persistent
 ```
 
 Make credential:
-```
+```all
 $ dd if=/dev/urandom of=data.clear bs=1 count=16
 $ tpm2_makecredential -e ek.pub -s data.clear -n $(xxd -ps -c 100 ak.name) -o data.cipher
 ```
 
 Activate credential:
-```
+```all
 $ tpm2_startauthsession --policy-session -S session.ctx
 $ tpm2_policysecret -S session.ctx -c e
 $ tpm2_activatecredential -c 0x81010002 -C 0x81010001 -i data.cipher -o data.decipher -P session:session.ctx
@@ -791,7 +812,7 @@ $ tpm2_clear -c p
 Using a HMAC session to enable encryption of selected parameters.
 
 Get random:
-```
+```all
 $ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
 
 $ tpm2_startauthsession --hmac-session -c primary_sh.ctx -S session.ctx
@@ -800,7 +821,7 @@ $ tpm2_flushcontext session.ctx
 ```
 
 Decryption:
-```
+```all
 $ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
 
 # create RSA key
@@ -816,7 +837,7 @@ $ tpm2_flushcontext session.ctx
 ```
 
 Sign:
-```
+```all
 $ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
 
 # create RSA key
@@ -833,7 +854,7 @@ $ tpm2_verifysignature -c rsakey.ctx -g sha256 -m message -s signature
 ```
 
 HMAC:
-```
+```all
 $ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
 
 # create HMAC key
@@ -847,7 +868,7 @@ $ tpm2_flushcontext session.ctx
 ```
 
 NV operations:
-```
+```all
 $ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
 
 $ dd bs=1 count=32 </dev/urandom >data
@@ -864,7 +885,7 @@ $ tpm2_nvundefine 0x01000000 -C o
 ## Encryption & Decryption
 
 Using RSA key:
-```
+```all
 # create RSA key
 $ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
 $ tpm2_create -C primary_sh.ctx -g sha256 -G rsa -u rsakey.pub -r rsakey.priv
@@ -884,7 +905,7 @@ $ diff secret.decipher secret.clear
 ```
 
 Using AES key:
-```
+```all
 # create AES key
 $ tpm2_create -C primary_sh.ctx -G aes256 -u aeskey.pub -r aeskey.priv
 $ tpm2_load -C primary_sh.ctx -u aeskey.pub -r aeskey.priv -c aeskey.ctx
@@ -899,13 +920,13 @@ $ diff secret.decipher secret.clear
 ## Get Random
 
 Get 16 bytes of random:
-```
+```all
 $ tpm2_getrandom --hex 16
 ```
 
 ## Hashing
 
-```
+```all
 $ echo "some message" > message
 $ tpm2_hash -g sha256 --hex message
 ```
@@ -913,28 +934,28 @@ $ tpm2_hash -g sha256 --hex message
 ## Hierarchy Control
 
 Disable/Enable storage hierarchy:
-```
+```all
 $ tpm2_hierarchycontrol -C o shEnable clear
 $ tpm2_hierarchycontrol -C p shEnable set
 ```
 
 Disable/Enable endorsement hierarchy:
-```
+```all
 $ tpm2_hierarchycontrol -C e ehEnable clear
 $ tpm2_hierarchycontrol -C p ehEnable set
 ```
 
 Disable platform hierarchy:
-```ignore
+```exclude
 $ tpm2_hierarchycontrol -C p phEnable clear
-```ignore
+```
 
 phEnable, shEnable, and ehEnable flag is not persistent. All hierarchies will be set to TRUE after a reset.
 
 To simulate a reset (power cycling) simply terminate and relaunch the simulator, remember to run `tpm2_startup -c`.
 
 View hierarchy information:
-```
+```all
 $ tpm2_getcap properties-variable
 ```
 
@@ -943,7 +964,7 @@ $ tpm2_getcap properties-variable
 ### Under a Parent Key
 
 RSA key:
-```
+```all
 $ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
 
 $ openssl genrsa -out rsa_private.pem 2048
@@ -952,7 +973,7 @@ $ tpm2_load -C primary_sh.ctx -u rsakey_imported.pub -r rsakey_imported.priv -c 
 ```
 
 EC key:
-```
+```all
 $ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
 
 $ openssl ecparam -name prime256v1 -genkey -noout -out ecc_private.pem
@@ -961,7 +982,7 @@ $ tpm2_load -C primary_sh.ctx -u eckey_imported.pub -r eckey_imported.priv -c ec
 ```
 
 HMAC key:
-```
+```all
 $ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
 
 $ dd if=/dev/urandom of=raw.key bs=1 count=32
@@ -974,19 +995,19 @@ $ tpm2_load -C primary_sh.ctx -u hmackey_imported.pub -r hmackey_imported.priv -
 Load of a public external object area allows the object to be associated with a hierarchy. If the public and sensitive portions of the object are loaded, hierarchy is required to be TPM_RH_NULL.
 
 RSA key to null hierarchy:
-```
+```all
 $ openssl genrsa -out rsa_private.pem 2048
 $ tpm2_loadexternal -C n -G rsa -r rsa_private.pem -c rsakey_imported.ctx
 ```
 
 EC key to null hierarchy:
-```
+```all
 $ openssl ecparam -name prime256v1 -genkey -noout -out ecc_private.pem
 $ tpm2_loadexternal -C n -G ecc -r ecc_private.pem -c eckey_imported.ctx
 ```
 
 Just the public component of an RSA key to storage hierarchy:
-```
+```all
 $ openssl genrsa -out rsa_private.pem 2048
 $ openssl rsa -in rsa_private.pem -out rsa_public.pem -pubout
 $ tpm2_loadexternal -C o -G rsa -u rsa_public.pem -c rsakey_imported.ctx
@@ -997,7 +1018,7 @@ $ tpm2_loadexternal -C o -G rsa -u rsa_public.pem -c rsakey_imported.ctx
 <!-- to-do: platform NV -->
 
 NV define, write, and read:
-```
+```all
 $ dd bs=1 count=32 </dev/urandom >data
 $ tpm2_nvdefine 0x01000000 -C o -s 32 -a "ownerwrite|ownerread"
 $ tpm2_nvwrite 0x01000000 -C o -i data
@@ -1006,22 +1027,22 @@ $ diff data out
 ```
 
 NV read public:
-```
+```all
 $ tpm2_nvreadpublic
 ```
 
 Read NV indices:
-```
+```all
 $ tpm2_getcap handles-nv-index
 ```
 
 NV undefine:
-```
+```all
 $ tpm2_nvundefine 0x01000000 -C o
 ```
 
 NV with authvalue protection:
-```
+```all
 $ dd bs=1 count=32 </dev/urandom >data
 $ tpm2_nvdefine 0x01000000 -C o -s 32 -a "authread|authwrite" -p pswd
 $ tpm2_nvwrite 0x01000000 -i data -P pswd
@@ -1032,7 +1053,7 @@ $ tpm2_nvundefine 0x01000000 -C o
 ```
 
 NV under platform hierarchy. In this mode, the NV index cannot be cleared by `tpm2_clear`:
-```
+```all
 $ dd bs=1 count=32 </dev/urandom >data
 $ tpm2_nvdefine 0x01000000 -C p -s 32 -a "ppwrite|ppread|platformcreate"
 $ tpm2_nvwrite 0x01000000 -C p -i data
@@ -1043,7 +1064,7 @@ $ tpm2_nvundefine 0x01000000 -C p
 ```
 
 Define a 64-bit NV for OR operation:
-```
+```all
 $ tpm2_nvdefine 0x01000000 -C o -a "nt=bits|ownerwrite|ownerread"
 
 # OR 1's into NV index
@@ -1054,7 +1075,7 @@ $ tpm2_nvundefine 0x01000000 -C o
 ```
 
 Define a 64-bit NV for counting operation:
-```
+```all
 $ tpm2_nvdefine 0x01000000 -C o -a "nt=counter|ownerwrite|ownerread"
 
 # increment
@@ -1065,7 +1086,7 @@ $ tpm2_nvundefine 0x01000000 -C o
 ```
 
 Define a 64-bit NV for extend operation. The name algorithm decides the hash algorithm used for the extend:
-```
+```all
 $ tpm2_nvdefine 0x01000000 -C o -g sha256 -a "nt=extend|ownerwrite|ownerread"
 
 # extend
@@ -1081,7 +1102,7 @@ Define an NV for pinfail operation:
 <!-- If TPM_NT is TPM_NT_PIN_FAIL, TPMA_NV_NO_DA must be SET. This removes ambiguity over which Dictionary Attack defense protects a TPM_NV_PIN_FAIL's authValue. -->
 <!-- TPMA_NV_AUTHWRITE must set to CLEAR. For reasoning purpose: imagine if TPMA_NV_AUTHWRITE was SET for a pinpass/pinfail, a user knowing the authorization value could decrease pinCount or increase pinLimit, defeating the purpose of a pinfail/pinfail. -->
 <!-- pinCount is incremented after an authorization attempt using authValue succeeds -->
-```
+```all
 $ tpm2_nvdefine 0x01000000 -C o -a "nt=pinfail|ownerwrite|ownerread|authread|no_da" -p pass123
 
 # set the TPMS_NV_PIN_COUNTER_PARAMETERS structure (pinCount=0|pinLimit=5)
@@ -1106,7 +1127,7 @@ $ tpm2_nvundefine 0x01000000 -C o
 ```
 
 A more meaningful pinfail example:
-```
+```all
 $ tpm2_nvdefine 0x01000000 -C o -a "nt=pinfail|ownerwrite|ownerread|authread|no_da" -p pass123
 
 # set the TPMS_NV_PIN_COUNTER_PARAMETERS structure (pinCount=0|pinLimit=5)
@@ -1154,7 +1175,7 @@ Define an NV for pinpass operation:
 <!-- Use `tpm2_nvread 0x01000000 -C o` to read the NV instead of `tpm2_nvread 0x01000000 -C 0x01000000 -P pass123`, because a successful authentication using index authvalue will increase the pinCount -->
 <!-- TPMA_NV_AUTHWRITE must set to CLEAR. For reasoning purpose: imagine if TPMA_NV_AUTHWRITE was SET for a pinpass/pinfail, a user knowing the authorization value could decrease pinCount or increase pinLimit, defeating the purpose of a pinfail/pinfail. -->
 <!-- pinCount is incremented after an authorization attempt using authValue fails -->
-```
+```all
 $ tpm2_nvdefine 0x01000000 -C o -a "nt=pinpass|ownerwrite|ownerread|authread" -p pass123
 
 # set the TPMS_NV_PIN_COUNTER_PARAMETERS structure (pinCount=0|pinLimit=5)
@@ -1177,7 +1198,7 @@ $ tpm2_nvundefine 0x01000000 -C o
 ```
 
 A more meaningful pinpass example:
-```
+```all
 $ tpm2_nvdefine 0x01000000 -C o -a "nt=pinpass|ownerwrite|ownerread|authread" -p pass123
 
 # set the TPMS_NV_PIN_COUNTER_PARAMETERS structure (pinCount=0|pinLimit=5)
@@ -1224,7 +1245,7 @@ $ tpm2_nvundefine 0x01000000 -C o
 ## OpenSSL CLI
 
 Verify TPM engine (tpm2-tss-engine) installation:
-```
+```all
 $ openssl engine -t -c tpm2tss
 (tpm2tss) TPM2-TSS engine for OpenSSL
  [RSA, RAND]
@@ -1232,20 +1253,20 @@ $ openssl engine -t -c tpm2tss
 ```
 
 Generate random value:
-```
+```all
 $ openssl rand -engine tpm2tss -hex 10
 ```
 
 ### PEM Encoded Key
 
 Create parent key:
-```
+```all
 $ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
 $ tpm2_evictcontrol -C o -c primary_sh.ctx 0x81000001
 ```
 
 Create RSA key using tpm2-tss-engine tool, the output is a PEM encoded TPM key object:
-```
+```all
 $ tpm2tss-genkey -P 0x81000001 -a rsa -s 2048 rsakey.pem
 
 # or
@@ -1254,7 +1275,7 @@ $ tpm2tss-genkey -a rsa -s 2048 rsakey.pem
 ```
 
 Create EC key using tpm2-tss-engine tool:
-```
+```all
 $ tpm2tss-genkey -P 0x81000001 -a ecdsa eckey.pem
 
 # or
@@ -1263,13 +1284,13 @@ $ tpm2tss-genkey -a ecdsa eckey.pem
 ```
 
 Read public component:
-```
+```all
 $ openssl rsa -engine tpm2tss -inform engine -in rsakey.pem -pubout -outform pem -out rsakey.pub.pem
 $ openssl ec -engine tpm2tss -inform engine -in eckey.pem -pubout -outform pem -out eckey.pub.pem
 ```
 
 RSA encryption & decryption:
-```
+```all
 $ echo "some secret" > secret.clear
 $ openssl pkeyutl -pubin -inkey rsakey.pub.pem -in secret.clear -encrypt -out secret.cipher
 $ openssl pkeyutl -engine tpm2tss -keyform engine -inkey rsakey.pem -decrypt -in secret.cipher -out secret.decipher
@@ -1277,21 +1298,21 @@ $ diff secret.clear secret.decipher
 ```
 
 RSA signing & verification:
-```
+```all
 $ dd bs=1 count=32 </dev/urandom > data
 $ openssl pkeyutl -engine tpm2tss -keyform engine -inkey rsakey.pem -sign -in data -out data.sig
 $ openssl pkeyutl -pubin -inkey rsakey.pub.pem -verify -in data -sigfile data.sig
 ```
 
 EC signing & verification:
-```
+```all
 $ dd bs=1 count=32 </dev/urandom > data
 $ openssl pkeyutl -engine tpm2tss -keyform engine -inkey eckey.pem -sign -in data -out data.sig
 $ openssl pkeyutl -pubin -inkey eckey.pub.pem -verify -in data -sigfile data.sig
 ```
 
 Create self-signed certificate:
-```
+```all
 $ openssl req -new -x509 -engine tpm2tss -keyform engine -key rsakey.pem -subj "/CN=TPM/O=Infineon/C=SG" -out rsakey.crt.pem
 $ openssl x509 -in rsakey.crt.pem -text -noout
 $ openssl req -new -x509 -engine tpm2tss -keyform engine -key eckey.pem -subj "/CN=TPM/O=Infineon/C=SG" -out eckey.crt.pem
@@ -1299,7 +1320,7 @@ $ openssl x509 -in eckey.crt.pem -text -noout
 ```
 
 Create certificate signing request (CSR):
-```
+```all
 $ openssl req -new -engine tpm2tss -keyform engine -key rsakey.pem -subj "/CN=TPM/O=Infineon/C=SG" -out rsakey.csr.pem
 $ openssl req -in rsakey.csr.pem -text -noout
 $ openssl req -new -engine tpm2tss -keyform engine -key eckey.pem -subj "/CN=TPM/O=Infineon/C=SG" -out eckey.csr.pem
@@ -1307,7 +1328,7 @@ $ openssl req -in eckey.csr.pem -text -noout
 ```
 
 Clean up:
-```
+```all
 $ tpm2_clear -c p
 ```
 
@@ -1315,20 +1336,25 @@ $ tpm2_clear -c p
 
 In the event that TPM key is not created using `tpm2tss-genkey`, use the following tool to make the conversion.
 
-Build the tool and set LD_LIBRARY_PATH (Ubuntu):
-```
-$ gcc -Wall -o convert ~/tpm2-cmd-ref/openssl-lib-convert-to-pem-key/convert.c -lcrypto -ltss2-mu -L /usr/lib/x86_64-linux-gnu/engines-1.1/ -ltpm2tss
+Build the tool and set LD_LIBRARY_PATH:
+```debian:bullseye,debian:buster,ubuntu:18.04,ubuntu:20.04
+# Debian (bullseye, buster), Ubuntu (18.04, 20.04)
 $ export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/engines-1.1
 ```
-
-Build the tool and set LD_LIBRARY_PATH (Raspberry Pi):
-```ignore
-$ gcc -Wall -o convert ~/tpm2-cmd-ref/openssl-lib-convert-to-pem-key/convert.c -lcrypto -ltss2-mu -L /usr/lib/arm-linux-gnueabihf/engines-1.1/ -ltpm2tss
+```ubuntu:22.04
+# Ubuntu 22.04
+$ export LD_LIBRARY_PATH=/usr/local/lib/engines-1.1
+```
+```exclude
+# Raspberry Pi
 $ export LD_LIBRARY_PATH=/usr/lib/arm-linux-gnueabihf/engines-1.1
-```ignore
+```
+```all
+$ gcc -Wall -o convert ~/tpm2-cmd-ref/openssl-lib-convert-to-pem-key/convert.c -L$LD_LIBRARY_PATH -lcrypto -ltss2-mu -ltpm2tss
+```
 
 RSA key:
-```
+```all
 $ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
 $ tpm2_evictcontrol -C o -c primary_sh.ctx 0x81000001
 $ tpm2_create -C 0x81000001 -g sha256 -G rsa -u rsakey.pub -r rsakey.priv -a "fixedtpm|fixedparent|sensitivedataorigin|userwithauth|decrypt|sign|noda"
@@ -1345,7 +1371,7 @@ $ tpm2_clear -c p
 ```
 
 EC key:
-```
+```all
 $ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
 $ tpm2_evictcontrol -C o -c primary_sh.ctx 0x81000001
 $ tpm2_create -C 0x81000001 -g sha256 -G ecc -u eckey.pub -r eckey.priv -a "fixedtpm|fixedparent|sensitivedataorigin|userwithauth|sign|noda"
@@ -1364,7 +1390,7 @@ $ tpm2_clear -c p
 ### Persistent Key
 
 Generate persistent RSA and EC keys using tpm2-tools:
-```
+```all
 $ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
 
 $ tpm2_create -C primary_sh.ctx -g sha256 -G rsa -u rsakey.pub -r rsakey.priv -a "fixedtpm|fixedparent|sensitivedataorigin|userwithauth|decrypt|sign|noda"
@@ -1377,13 +1403,13 @@ $ tpm2_evictcontrol -C o -c eckey.ctx 0x81000003
 ```
 
 Read public component:
-```
+```all
 $ openssl rsa -engine tpm2tss -inform engine -in 0x81000002 -pubout -outform pem -out rsakey.pub.pem
 $ openssl ec -engine tpm2tss -inform engine -in 0x81000003 -pubout -outform pem -out eckey.pub.pem
 ```
 
 RSA encryption & decryption:
-```
+```all
 $ echo "some secret" > secret.clear
 $ openssl pkeyutl -pubin -inkey rsakey.pub.pem -in secret.clear -encrypt -out secret.cipher
 $ openssl pkeyutl -engine tpm2tss -keyform engine -inkey 0x81000002 -decrypt -in secret.cipher -out secret.decipher
@@ -1391,21 +1417,21 @@ $ diff secret.clear secret.decipher
 ```
 
 RSA signing & verification:
-```
+```all
 $ dd bs=1 count=32 </dev/urandom > data
 $ openssl pkeyutl -engine tpm2tss -keyform engine -inkey 0x81000002 -sign -in data -out data.sig
 $ openssl pkeyutl -pubin -inkey rsakey.pub.pem -verify -in data -sigfile data.sig
 ```
 
 EC signing & verification:
-```
+```all
 $ dd bs=1 count=32 </dev/urandom > data
 $ openssl pkeyutl -engine tpm2tss -keyform engine -inkey 0x81000003 -sign -in data -out data.sig
 $ openssl pkeyutl -pubin -inkey eckey.pub.pem -verify -in data -sigfile data.sig
 ```
 
 Create self-signed certificate:
-```
+```all
 $ openssl req -new -x509 -engine tpm2tss -keyform engine -key 0x81000002 -subj "/CN=TPM/O=Infineon/C=SG" -out rsakey.crt.pem
 $ openssl x509 -in rsakey.crt.pem -text -noout
 $ openssl req -new -x509 -engine tpm2tss -keyform engine -key 0x81000003 -subj "/CN=TPM/O=Infineon/C=SG" -out eckey.crt.pem
@@ -1413,7 +1439,7 @@ $ openssl x509 -in eckey.crt.pem -text -noout
 ```
 
 Create certificate signing request (CSR):
-```
+```all
 $ openssl req -new -engine tpm2tss -keyform engine -key 0x81000002 -subj "/CN=TPM/O=Infineon/C=SG" -out rsakey.csr.pem
 $ openssl req -in rsakey.csr.pem -text -noout
 $ openssl req -new -engine tpm2tss -keyform engine -key 0x81000003 -subj "/CN=TPM/O=Infineon/C=SG" -out eckey.csr.pem
@@ -1421,14 +1447,14 @@ $ openssl req -in eckey.csr.pem -text -noout
 ```
 
 Clean up:
-```
+```all
 $ tpm2_clear -c p
 ```
 
 ### Server-client TLS Communication
 
 Microsoft TPM2.0 simulator:
-```ignore
+```exclude
 $ cd openssl-cli-tls-mssim
 $ chmod a+x *.sh
 $ ./0_clean-up.sh 
@@ -1440,10 +1466,10 @@ $ ./4_start-server.sh
 # start a new terminal
 $ cd openssl-cli-tls-mssim
 $ ./5_start-good-client.sh
-```ignore
+```
 
 Hardware TPM:
-```ignore
+```exclude
 $ cd openssl-cli-tls-optiga-tpm
 $ chmod a+x *.sh
 $ ./0_clean-up.sh 
@@ -1455,42 +1481,42 @@ $ ./4_start-server.sh
 # start a new terminal
 $ cd openssl-cli-tls-mssim
 $ ./5_start-good-client.sh
-```ignore
+```
 
 ### Nginx & Curl
 
 Install Nginx on your host:
-```ignore
+```exclude
 $ sudo apt install nginx
-```ignore
+```
 
 Add `ssl_engine tpm2tss;` to `/etc/nginx/nginx.conf`, check reference [nginx/nginx.conf](nginx/nginx.conf)
 
 #### PEM Encoded Key
 
 Create key & self-signed certificate:
-```ignore
+```exclude
 $ cd /tmp
 $ tpm2tss-genkey -a rsa -s 2048 rsakey.pem
 $ openssl req -new -x509 -engine tpm2tss -keyform engine -key rsakey.pem -subj "/CN=TPM/O=Infineon/C=SG" -out rsakey.crt.pem
-```ignore
+```
 
 Edit `/etc/nginx/sites-enabled/default` to enable SSL, check reference [nginx/default-pem](nginx/default-pem)
 
 Restart Nginx:
-```ignore
+```exclude
 $ sudo service nginx restart
-```ignore
+```
 
 Using Curl to test the connection:
-```ignore
+```exclude
 $ curl --insecure --engine tpm2tss --key-type ENG --key rsakey.pem --cert rsakey.crt.pem https://127.0.0.1
-```ignore
+```
 
 #### Persistent Key
 
 Create key & self-signed certificate:
-```
+```all
 $ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
 $ tpm2_create -C primary_sh.ctx -g sha256 -G rsa -u rsakey.pub -r rsakey.priv -a "fixedtpm|fixedparent|sensitivedataorigin|userwithauth|decrypt|sign|noda"
 $ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -c rsakey.ctx
@@ -1501,14 +1527,14 @@ $ openssl req -new -x509 -engine tpm2tss -keyform engine -key 0x81000002 -subj "
 Edit `/etc/nginx/sites-enabled/default` to enable SSL, check reference [nginx/default-persistent](nginx/default-persistent)
 
 Restart Nginx:
-```ignore
+```exclude
 $ sudo service nginx restart
-```ignore
+```
 
 Using Curl to test the connection:
-```ignore
+```exclude
 $ curl --insecure --engine tpm2tss --key-type ENG --key 0x81000002 --cert rsakey.crt.pem https://127.0.0.1
-```ignore
+```
 
 ## OpenSSL Library
 
@@ -1520,22 +1546,29 @@ $ curl --insecure --engine tpm2tss --key-type ENG --key 0x81000002 --cert rsakey
 - EC sign/verification
 
 Ubuntu:
-```
-$ gcc -Wall -o examples ~/tpm2-cmd-ref/openssl-lib-general-examples/examples.c -lssl -lcrypto -L /usr/lib/x86_64-linux-gnu/engines-1.1/ -ltpm2tss
+```debian:bullseye,debian:buster,ubuntu:18.04,ubuntu:20.04
+# Debian (bullseye, buster), Ubuntu (18.04, 20.04)
 $ export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/engines-1.1
+```
+```ubuntu:22.04
+# Ubuntu 22.04
+$ export LD_LIBRARY_PATH=/usr/local/lib/engines-1.1
+```
+```all
+$ gcc -Wall -o examples ~/tpm2-cmd-ref/openssl-lib-general-examples/examples.c -L$LD_LIBRARY_PATH -lssl -lcrypto -ltpm2tss
 $ ./examples
 ```
 
 Raspberry Pi:
-```ignore
-$ gcc -Wall -o examples ~/tpm2-cmd-ref/openssl-lib-general-examples/examples.c -lssl -lcrypto -L /usr/lib/arm-linux-gnueabihf/engines-1.1/ -ltpm2tss -DENABLE_OPTIGA_TPM
+```exclude
 $ export LD_LIBRARY_PATH=/usr/lib/arm-linux-gnueabihf/engines-1.1
+$ gcc -Wall -o examples ~/tpm2-cmd-ref/openssl-lib-general-examples/examples.c -lssl -lcrypto -L$LD_LIBRARY_PATH -ltpm2tss -DENABLE_OPTIGA_TPM
 $ ./examples
-```ignore
+```
 
 ### Server-client TLS Communication
 
-```ignore
+```exclude
 $ cd openssl-lib-tls
 $ chmod a+x *.sh
 $ ./0_clean-up.sh 
@@ -1551,7 +1584,7 @@ $ ./7_start-server.sh
 $ cd openssl-lib-tls
 $ ./8_start-software-client.sh
 $ ./9_start-tpm-client.sh
-```ignore
+```
 
 ## Password Authorization
 
@@ -1559,7 +1592,7 @@ A plaintext password value may be used to authorize an action when use of an aut
 <!-- https://github.com/remuswu1019/tpm2-tools/commit/a82f766e9bc42df9cfbdb12712de071e4e539c9f -->
 <!-- https://github.com/tpm2-software/tpm2-tools/pull/2719 -->
 
-```
+```all
 $ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
 
 # create a key safeguarded by the a password
@@ -1595,65 +1628,65 @@ While higher localities may exist, Locality 4 is the highest locality level defi
 
 PCR bank allocation. In other words, enable/disable PCR banks. Cold/Warm reset the TPM after executing the following command to see the effects:
 <!-- TPM2_PCR_Allocate() takes effect at _TPM_Init(), not TPM2_Startup(). -->
-```
+```all
 # enable only sha256 bank
 $ tpm2_pcrallocate sha1:none+sha256:all+sha384:none
 ```
 
 Read PCRs:
-```
+```all
 $ tpm2_pcrread
 ```
 
 Compute and show the hash value of a file without extending to PCR:
-```
+```all
 $ echo "plaintext" > plain.txt
 $ tpm2_pcrevent plain.txt
 ```
 
 Extend a file to PCR:
-```
+```all
 $ echo "plaintext" > plain.txt
 $ tpm2_pcrevent 16 plain.txt
 ```
 
 Extend a hash value to PCR:
-```
+```all
 $ tpm2_pcrextend 16:sha256=beefcafebeefcafebeefcafebeefcafebeefcafebeefcafebeefcafebeefcafe
 ```
 
 Reset PCR index:
-```
+```all
 $ tpm2_pcrreset 16
 ```
 
 ## Persistent Key
 
 Make storage key persistent:
-```
+```all
 $ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
 $ tpm2_evictcontrol -C o -c primary_sh.ctx 0x81000001
 ```
 
 Make platform key persistent:
-```
+```all
 $ tpm2_createprimary -C p -g sha256 -G ecc -c primary_ph.ctx
 $ tpm2_evictcontrol -C p -c primary_ph.ctx 0x81800001
 ```
 
 List persistent handles:
-```
+```all
 $ tpm2_getcap handles-persistent
 ```
 
 Access the persistent and non-persistent key:
-```
+```all
 $ tpm2_readpublic -c 0x81000001
 $ tpm2_readpublic -c primary_sh.ctx
 ```
 
 Evict persistent handle:
-```
+```all
 $ tpm2_evictcontrol -C o -c 0x81000001
 $ tpm2_evictcontrol -C p -c 0x81800001
 ```
@@ -1665,7 +1698,7 @@ Please refer to [[7]](#7).
 ## Quote
 
 A simple example:
-```
+```all
 # create key
 $ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
 $ tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv
@@ -1686,7 +1719,7 @@ Example using an event log:
 eventlog syntax check TCG spec: PC Client Platform Firmware Profile, 10 Event Logging
 and checkout https://trustedcomputinggroup.org/wp-content/uploads/TCG_IWG_CEL_v1_r0p35_11july2021.pdf
 -->
-```
+```all
 # cold/warm reset the TPM to clear pcr index 0
 # power cycle the TPM or press the reset button on the TPM board before executing the following command
 $ tpm2_startup -c
@@ -1724,7 +1757,7 @@ This section only work on hardware TPM.
 The issuing certificate authority (CA) and certificate revocation list (CRL) information of an EK certificate can be found in the EK certificate "X509v3 extensions" field.
 
 Read RSA & ECC endorsement key certificates from NV:
-```ignore
+```exclude
 # RSA
 $ tpm2_nvread 0x1c00002 -o rsa_ek.crt.der
 $ openssl x509 -inform der -in rsa_ek.crt.der -text
@@ -1732,17 +1765,17 @@ $ openssl x509 -inform der -in rsa_ek.crt.der -text
 # ECC
 $ tpm2_nvread 0x1c0000a -o ecc_ek.crt.der
 $ openssl x509 -inform der -in ecc_ek.crt.der -text
-```ignore
+```
 
 Read RSA & ECC endorsement key certificates using tpm2-tools:
-```ignore
+```exclude
 $ tpm2_getekcertificate -o rsa_ek.crt.der -o ecc_ek.crt.der
-```ignore
+```
 
 ## Read Public
 
 Print the public component of a key:
-```
+```all
 $ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
 $ tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv
 $ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsakey.ctx
@@ -1750,7 +1783,7 @@ $ tpm2_readpublic -c rsakey.ctx
 ```
 
 Output the name and the public key in PEM format:
-```
+```all
 $ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
 $ tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv
 $ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey.priv -n rsakey.name -c rsakey.ctx
@@ -1758,14 +1791,14 @@ $ tpm2_readpublic -c rsakey.ctx -n rsakey.name -f pem -o rsakey.pub.pem
 ```
 
 Print the public component of an NV index:
-```
+```all
 $ tpm2_nvdefine 0x01000000 -C o -s 32 -a "ownerwrite|ownerread"
 $ tpm2_nvreadpublic 0x01000000
 $ tpm2_nvundefine 0x01000000 -C o
 ```
 
 Output the name of an NV index:
-```
+```all
 $ tpm2_nvdefine 0x01000000 -C o -s 32 -a "ownerwrite|ownerread"
 $ tpm2_nvreadpublic 0x01000000 | grep 'name' | sed 's/.* //' | xxd -p -r > nv_0x01000000.name
 $ tpm2_nvundefine 0x01000000 -C o
@@ -1774,7 +1807,7 @@ $ tpm2_nvundefine 0x01000000 -C o
 ## Seal
 
 Seal data to a TPM:
-```
+```all
 $ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
 
 $ echo "some message" > message
@@ -1799,27 +1832,27 @@ Examples showing here are in the following settings:
 ### Without Credential Protection
 
 \[Both\] Create duplication policy:
-```
+```all
 $ tpm2_startauthsession -S session.ctx
 $ tpm2_policycommandcode -S session.ctx -L policy.ctx TPM2_CC_Duplicate
 $ tpm2_flushcontext session.ctx
 ```
 
 \[Recipient\] Create a recipient's parent key:
-```
+```all
 $ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
 $ tpm2_create -C primary_sh.ctx -g sha256 -G ecc -r recipient_parent.prv -u recipient_parent.pub -a "restricted|sensitivedataorigin|decrypt|userwithauth"
 ```
 
 \[Sender\] Create an RSA key under the primary object:
-```
+```all
 $ tpm2_create -C primary_sh.ctx -g sha256 -G rsa -r rsakey.prv -u rsakey.pub -L policy.ctx -a "sensitivedataorigin|userwithauth|decrypt|sign"
 $ tpm2_load -C primary_sh.ctx -r rsakey.prv -u rsakey.pub -c rsakey.ctx
 $ tpm2_readpublic -c rsakey.ctx -o rsakey.pub
 ```
 
 \[Sender\] Create duplication blob:
-```
+```all
 $ tpm2_startauthsession --policy-session -S session.ctx
 $ tpm2_policycommandcode -S session.ctx TPM2_CC_Duplicate
 $ tpm2_loadexternal -C o -u recipient_parent.pub -c recipient_parent.ctx
@@ -1828,7 +1861,7 @@ $ tpm2_flushcontext session.ctx
 ```
 
 \[Recipient\] Import the blob (RSA key):
-```
+```all
 $ tpm2_load -C primary_sh.ctx -u recipient_parent.pub -r recipient_parent.prv -c recipient_parent.ctx
 $ tpm2_import -C recipient_parent.ctx -u rsakey.pub -r rsakey_imported.prv -i dup.priv -s dup.seed
 $ tpm2_load -C recipient_parent.ctx -u rsakey.pub -r rsakey_imported.prv -c rsakey_imported.ctx
@@ -1837,44 +1870,44 @@ $ tpm2_load -C recipient_parent.ctx -u rsakey.pub -r rsakey_imported.prv -c rsak
 ### With Credential Protection
 
 \[Both\] Create duplication policy:
-```
+```all
 $ tpm2_startauthsession -S session.ctx
 $ tpm2_policycommandcode -S session.ctx -L policy.ctx TPM2_CC_Duplicate
 $ tpm2_flushcontext session.ctx
 ```
 
 \[Recipient\] Create EK:
-```
+```all
 $ tpm2_createek -c 0x81010001 -G rsa -u ek.pub
 ```
 
 \[Recipient\] Read recipient public component:
-```
+```all
 $ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
 $ tpm2_readpublic -c primary_sh.ctx -o recipient_parent.pub -n recipient_parent.name
 ```
 
 \[Sender\] Create a sender's parent key:
-```
+```all
 $ tpm2_create -C primary_sh.ctx -g sha256 -G ecc -r sender_parent.prv -u sender_parent.pub -a "fixedtpm|fixedparent|sensitivedataorigin|userwithauth|restricted|decrypt"
 $ tpm2_load -C primary_sh.ctx -u sender_parent.pub -r sender_parent.prv -c sender_parent.ctx
 ```
 
 \[Sender\] Create an RSA key under the parent key:
-```
+```all
 $ tpm2_create -C sender_parent.ctx -g sha256 -G rsa -r rsakey.prv -u rsakey.pub -L policy.ctx -a "sensitivedataorigin|userwithauth|decrypt|sign"
 $ tpm2_load -C sender_parent.ctx -r rsakey.prv -u rsakey.pub -c rsakey.ctx
 $ tpm2_readpublic -c rsakey.ctx -o rsakey.pub
 ```
 
 \[Sender\] Create an inner wrap key and protect it with EK credential. Usually, recipient should also provide EK certificate for verification purpose:
-```
+```all
 $ dd if=/dev/urandom of=innerwrapkey.clear bs=1 count=16
 $ tpm2_makecredential -e ek.pub -s innerwrapkey.clear -n $(xxd -ps -c 100 recipient_parent.name) -o innerwrapkey.cipher
 ```
 
 \[Sender\] Create duplication blob:
-```
+```all
 $ tpm2_startauthsession --policy-session -S session.ctx
 $ tpm2_policycommandcode -S session.ctx TPM2_CC_Duplicate
 $ tpm2_loadexternal -C o -u recipient_parent.pub -c recipient_parent.ctx
@@ -1883,7 +1916,7 @@ $ tpm2_flushcontext session.ctx
 ```
 
 \[Recipient\] Recover the inner wrap key with EK credential:
-```
+```all
 $ tpm2_startauthsession --policy-session -S session.ctx
 $ tpm2_policysecret -S session.ctx -c e
 $ tpm2_activatecredential -c primary_sh.ctx -C 0x81010001 -i innerwrapkey.cipher -o innerwrapkey.decipher -P session:session.ctx
@@ -1891,13 +1924,13 @@ $ tpm2_flushcontext session.ctx
 ```
 
 \[Recipient\] Import the blob (RSA key):
-```
+```all
 $ tpm2_import -C primary_sh.ctx -u rsakey.pub -r rsakey_imported.prv -k innerwrapkey.decipher -i dup.priv -s dup.seed
 $ tpm2_load -C primary_sh.ctx -u rsakey.pub -r rsakey_imported.prv -c rsakey_imported.ctx
 ```
 
 Clean up:
-```
+```all
 $ tpm2_clear -c p
 ```
 
@@ -1918,7 +1951,7 @@ Once a TPM has received TPM2_SelfTest() and before completion of all tests, the 
 <!-- When the session is an HMAC session, the HMAC sessionKey is derived from the authValue -->
 
 Commands below should have the same effect as password authorization due to tpm2-tools implementation. It treats all password authorization as HMAC session-based authorization:
-```
+```all
 # create a key safeguarded by the a password
 $ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
 $ tpm2_create -C primary_sh.ctx -G rsa -u rsakey.pub -r rsakey.priv -a "fixedtpm|fixedparent|sensitivedataorigin|userwithauth|decrypt|sign" -p pass123
@@ -1944,7 +1977,7 @@ Enhanced authorization is a TPM capability that allows entity-creators or admini
 Allows for mutable policies by tethering to a signing authority. In this approach, authority can add new policy but unable to revoke old policy:
 <!-- This is an immediate assertion. This assertion evaluation checks to see if the current policyDigest is authorized by a signing key. So the order of tpm2_policyauthorize matters. Only authority signed policies should appear before tpm2_policyauthorize assertion, other policies should appear after tpm2_policyauthorize. -->
 
-```
+```all
 # create a signing authority
 $ openssl genrsa -out authority_sk.pem 2048
 $ openssl rsa -in authority_sk.pem -out authority_pk.pem -pubout
@@ -2006,7 +2039,7 @@ $ tpm2_flushcontext session.ctx
 Allows for mutable policies by referencing to a policy from an NV index. In other words, an object policy is stored in NV and it can be replaced any time, hence mutable policy:
 <!-- This is an immediate assertion. This assertion evaluation checks to see if the current policyDigest is equivalent to the computed policy stored in NV. So the order of tpm2_policyauthorizenv matters. Only policies that associated with the policy value stored in NV should appear before tpm2_policyauthorizenv assertion, other policies should appear after tpm2_policyauthorizenv. -->
 
-```
+```all
 # create NV to store policy
 $ tpm2_nvdefine -C o -p pass123 -a "authread|authwrite" -s 34 0x1000000
 
@@ -2065,7 +2098,7 @@ $ tpm2_flushcontext session.ctx
 
 Enables binding a policy to the authorization value of the authorized TPM object. Enables a policy that requires the object's authentication passphrase be provided. This is equivalent to authenticating using the object passphrase in HMAC, only this enforces it as a policy:
 
-```
+```all
 # create the policy
 $ tpm2_startauthsession -S session.ctx
 $ tpm2_policyauthvalue -S session.ctx -L authvalue.policy
@@ -2091,7 +2124,7 @@ $ tpm2_flushcontext session.ctx
 Check policy command code `man tpm2_policycommandcode` for list of supported commands.
 
 Restrict a key for signing use only:
-```
+```all
 # create the policy
 $ tpm2_startauthsession -S session.ctx
 $ tpm2_policycommandcode -S session.ctx TPM2_CC_Sign -L sign.policy
@@ -2117,7 +2150,7 @@ $ tpm2_flushcontext session.ctx
 Enables policy authorization by evaluating the comparison operation on the TPMS_CLOCK_INFO: reset count, restart count, time, clock, and clock safe flag.
 
 One example is to restrict the usage of a key to only the first 2 minutes of TPM Clock:
-```
+```all
 # create the policy
 $ tpm2_startauthsession -S session.ctx
 $ tpm2_policycountertimer -S session.ctx -L time.policy --ult clock=120000
@@ -2158,7 +2191,7 @@ Couples a policy with command parameters of the command. Used in conjunction wit
 <!--
 The policy needs tpm2_policyauthorize/tpm2_policyauthorizenv otherwise it turns into a chicken and egg problem. We know from the beginning, a policy has to be created first then it is set to an object. Finally, the policy protected object can be used to perform certain actions (e.g., sign, decrypt, ...). However, to create tpm2_policycphash you will need to generate cpHash and the cpHash recipe requires an object name. And that is exactly the chicken and egg problem, you cant create tpm2_policycphash without creating an object first; on the other hand, you cant create an object without creating a policy first. To break the deadlock, create an object with tpm2_policyauthorize/tpm2_policyauthorizenv. Now tpm2_policycphash can be associated with the object at a later stage.
 -->
-```
+```all
 # create a signing authority
 $ openssl genrsa -out authority_sk.pem 2048
 $ openssl rsa -in authority_sk.pem -out authority_pk.pem -pubout
@@ -2224,7 +2257,7 @@ If duplication is allowed, authorization must always be provided by a policy ses
 -->
 
 Not used in conjunction with tpm2_policyauthorize/tpm2_policyauthorizenv. Policy specifies only the new parent but not the duplication object:
-```
+```all
 # create a source (old) parent and destination (new) parent
 $ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh_scr.ctx
 $ tpm2_createprimary -C n -g sha256 -G ecc -c primary_sh_dest.ctx
@@ -2251,7 +2284,7 @@ $ tpm2_load -C primary_sh_dest.ctx -u eckey.pub -r eckey_imported.priv -c eckey_
 ```
 
 Used in conjunction with tpm2_policyauthorize/tpm2_policyauthorizenv. Policy specifies the new parent and duplication object. This is to prevent other objects with PolicyAuthorize (with same authority) from being allowed to perform duplication:
-```
+```all
 # create a signing authority
 $ openssl genrsa -out authority_sk.pem 2048
 $ openssl rsa -in authority_sk.pem -out authority_pk.pem -pubout
@@ -2309,7 +2342,7 @@ Restrict TPM object authorization to specific localities. Changing locality of T
 <!-- to-do: check if this is fixed in latest version -->
 **Warning:** Apply the fix ([[12]](#12)) to pass the example using tpm2-tools version 5.2.
 
-```
+```all
 # create a locality policy
 $ tpm2_startauthsession -S session.ctx
 $ tpm2_policylocality -S session.ctx -L locality.policy zero
@@ -2337,7 +2370,7 @@ Couples a policy with names of specific objects. Names of all object handles in 
 This command allows a policy to be bound to a specific set of TPM entities without being bound to the parameters of the command. This is most useful for commands such as TPM2_Duplicate() and for TPM2_PCR_Event() when the referenced PCR requires a policy.
 
 Example, to authorize key duplication:
-```
+```all
 # create a signing authority
 $ openssl genrsa -out authority_sk.pem 2048
 $ openssl rsa -in authority_sk.pem -out authority_pk.pem -pubout
@@ -2387,7 +2420,7 @@ $ tpm2_load -C primary_sh_dest.ctx -u eckey.pub -r eckey_imported.priv -c eckey_
 TPM_CC_PCR_SetAuthPolicy not supported so skip this.
 
 Example, pcrevent:
-```
+```all
 ```
 -->
 
@@ -2410,7 +2443,7 @@ Evaluates policy authorization by comparing a specified value against the conten
 <!-- It is an immediate assertion. The name of NV index is taken into the policy calculation, so the NV has to be initialized before trial policy session. -->
 
 Example using "eq":
-```
+```all
 # define a special purpose NV
 # The value of this NV will be used for authorization
 $ tpm2_nvdefine 0x01000000 -C o -a "authread|authwrite" -s 1 -p pass123
@@ -2451,7 +2484,7 @@ $ tpm2_nvundefine 0x01000000 -C o
 Restrict TPM object authorization to the written state (TPMA_NV_WRITTEN attribute) of an NV index.
 
 Example, create a one time programmable NV:
-```
+```all
 # create the policy
 $ tpm2_startauthsession -S session.ctx
 $ tpm2_policycommandcode -S session.ctx TPM2_CC_NV_Write
@@ -2475,7 +2508,7 @@ $ tpm2_nvundefine 0x01000000 -C o
 
 Logically OR's two policies together.
 
-```
+```all
 # define a special purpose NV
 # The authValue of this NV will be used on another entity
 $ tpm2_nvdefine 0x01000000 -C o -a "authread|authwrite" -s 1 -p admin123
@@ -2523,7 +2556,7 @@ $ tpm2_nvundefine 0x01000000 -C o
 
 Enables binding a policy to the authorization value of the authorized TPM object. Enables a policy that requires the object's authentication passphrase be provided. This is equivalent to authenticating using the object passphrase in plaintext, only this enforces it as a policy.
 
-```
+```all
 # create the policy
 $ tpm2_startauthsession -S session.ctx
 $ tpm2_policypassword -S session.ctx -L authvalue.policy
@@ -2548,7 +2581,7 @@ $ tpm2_flushcontext session.ctx
 
 Create a policy that includes specific PCR values.
 
-```
+```all
 # check if sha256 bank of pcr is enabled
 # if it is not, enable it using tpm2_pcrallocate
 $ tpm2_pcrread
@@ -2591,7 +2624,7 @@ This is not a policy. This command is used to reset the policy data without chan
 <!-- TCG spec part4: 8.9.6.8 SessionResetPolicyData() -->
 
 You may restart the existing session:
-```
+```all
 $ tpm2_startauthsession --policy-session -S session.ctx
 # tpm2_policy...
 # tpm2_...
@@ -2612,7 +2645,7 @@ Couples the authorization of an object to that of an existing object.
 contain a special feature where you can set/get policy expiration time.
 -->
 A simple example:
-```
+```all
 # define a special purpose NV
 # The authValue of this NV will be used on another entity
 $ tpm2_nvdefine 0x01000000 -C o -a "authread|authwrite" -s 1 -p admin123
@@ -2648,7 +2681,7 @@ Enables policy authorization by verifying signature of optional TPM2 parameters.
 - policyRef: an opaque value determined by the authorizing entity. Set to the Empty Buffer if no value is present.
 
 Example with all qualifiers set to zero/empty buffer, a not so useful example:
-```
+```all
 # create a signing authority
 $ openssl genrsa -out authority_sk.pem 2048
 $ openssl rsa -in authority_sk.pem -out authority_pk.pem -pubout
@@ -2688,7 +2721,7 @@ $ tpm2_flushcontext session.ctx
 ```
 
 Example with only expiration set. The expiration is based on TPM time:
-```
+```all
 # create a signing authority
 $ openssl genrsa -out authority_sk.pem 2048
 $ openssl rsa -in authority_sk.pem -out authority_pk.pem -pubout
@@ -2735,7 +2768,7 @@ $ tpm2_flushcontext session.ctx
 ```
 
 Example with both nonceTPM and expiration set. The expiration is measured from the time that nonceTPM is generated:
-```
+```all
 # create a signing authority
 $ openssl genrsa -out authority_sk.pem 2048
 $ openssl rsa -in authority_sk.pem -out authority_pk.pem -pubout
@@ -2805,7 +2838,7 @@ $ tpm2_flushcontext session.ctx
 
 Couples a policy with public template of an object.
 
-```
+```all
 # get the primary key template hash
 $ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx --template-data primary_sh.template
 $ openssl dgst -sha256 -binary -out primary_sh.template.hash primary_sh.template
@@ -2839,7 +2872,7 @@ This command is similar to tpm2_policysigned except that it takes a ticket inste
 
 Example using tpm2_policysigned's ticket with only expiration set. The expiration is based on TPM time:
 <!-- to-do: what is the advantage of using tpm2_policyticket instead of tpm2_policysigned here??-->
-```
+```all
 # create a signing authority
 $ openssl genrsa -out authority_sk.pem 2048
 $ openssl rsa -in authority_sk.pem -out authority_pk.pem -pubout
@@ -2887,7 +2920,7 @@ $ tpm2_flushcontext session.ctx
 
 Example using tpm2_policysecret's ticket with only expiration set. The expiration is based on TPM time:
 <!-- the advantage of using ticket for authorization here is, no need to reveal the NV authValue to user. You can have a designated authority to issue time-bound ticket to users. -->
-```
+```all
 # define a special purpose NV
 # The authValue of this NV will be used on another entity
 $ tpm2_nvdefine 0x01000000 -C o -a "authread|authwrite" -s 1 -p admin123
@@ -2933,34 +2966,34 @@ $ tpm2_nvundefine 0x01000000 -C o
 ## Set Hierarchy Auth Value
 
 Set storage hierarchy auth:
-```
+```all
 $ tpm2_changeauth -c o ownerpswd
 ```
 
 Set endorsement hierarchy auth:
-```
+```all
 $ tpm2_changeauth -c e endorsementpswd
 ```
 
 Set platform hierarchy auth:
-```ignore
+```exclude
 $ tpm2_changeauth -c p platformpswd
-```ignore
+```
 
 Set lockout auth:
-```
+```all
 $ tpm2_changeauth -c l lockoutpswd
 ```
 
 Platform authvalue is not persistent, after a TPM reset, it will be set to empty auth.
 
 Check auth set information:
-```
+```all
 $ tpm2_getcap properties-variable
 ```
 
 Storage, endorsement, and lockout auth can be cleared by:
-```
+```all
 $ tpm2_clear -c p
 ```
 
@@ -2973,7 +3006,7 @@ Sets the authorization policy for the lockout, the platform hierarchy, the stora
 ## Signing & Verification
 
 Using RSA key:
-```
+```all
 # create RSA key
 $ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
 $ tpm2_create -C primary_sh.ctx -g sha256 -G rsa -u rsakey.pub -r rsakey.priv
@@ -2992,7 +3025,7 @@ $ openssl dgst -sha256 -verify public.pem -keyform pem -signature signature mess
 ```
 
 Using ECC key:
-```
+```all
 # create ECC key
 $ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
 $ tpm2_create -C primary_sh.ctx -g sha256 -G ecc -u eckey.pub -r eckey.priv
@@ -3011,7 +3044,7 @@ $ openssl dgst -sha256 -verify public.pem -keyform pem -signature signature mess
 ```
 
 Keyed-hash (HMAC):
-```
+```all
 # create HMAC key
 $ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
 $ tpm2_create -C primary_sh.ctx -G hmac -c hmackey.ctx
@@ -3032,23 +3065,23 @@ Type of startup and shutdown operations:
 3 methods of preparing a TPM for operation:
 
 1. TPM Reset: Startup(TPM_SU_CLEAR) that follows a Shutdown(TPM_SU_CLEAR), or Startup(TPM_SU_CLEAR) for which there was no preceding Shutdown() (a disorderly shutdown). A TPM reset is roughly analogous to a **reboot** of a platform.
-    ```ignore
+    ```exclude
     $ tpm2_shutdown -c
     < cold/warm reset >
     $ tpm2_startup -c
-    ```ignore
+    ```
 2. TPM Restart: Startup(TPM_SU_CLEAR) that follows a Shutdown(TPM_SU_STATE). This indicates a system that is restoring the OS from non-volatile storage, sometimes called **"hibernation"**. For a TPM restart, the TPM restores values saved by the preceding Shutdown(TPM_SU_STATE) except that all the PCR are set to their default initial state.
-    ```ignore
+    ```exclude
     $ tpm2_shutdown
     < cold/warm reset >
     $ tpm2_startup -c
-    ```ignore
+    ```
 3. TPM Resume: Startup(TPM_SU_STATE) that follows a Shutdown(TPM_SU_STATE). This indicates a system that is restarting the OS from RAM memory, sometimes called **"sleep"**. TPM Resume restores all of the state that was saved by Shutdown(STATE), including those PCR that are designated as being preserved by Startup(STATE). PCR not designated as being preserved, are reset to their default initial state.
-    ```ignore
+    ```exclude
     $ tpm2_shutdown
     < cold/warm reset >
     $ tpm2_startup
-    ```ignore
+    ```
 
 *Remarks:*
 - *Cold reset means power on reset*
@@ -3057,7 +3090,7 @@ Type of startup and shutdown operations:
 ## TPM Clear
 
 Perform TPM clear using platform or lockout hierarchy:
-```
+```all
 $ tpm2_clear -c p
 $ tpm2_clear -c l
 ```
@@ -3071,14 +3104,14 @@ TPM clear highlights:
 - Change the storage primary seed (SPS) to a new value from the TPM's random number generator
 
 To change the platform primary seed (PPS) to a new value from the TPM's random number generator:
-```ignore
+```exclude
 $ tpm2_changepps
-```ignore
+```
 
 To change the endorsement primary seed (EPS) to a new value from the TPM's random number generator. **This action will change the EK thus the EK certificate will also become unusable.**:
-```ignore
+```exclude
 $ tpm2_changeeps
-```ignore
+```
 
 # Examples (FAPI)
 
@@ -3092,7 +3125,7 @@ One-time provision:
 1. Recommended change in `/usr/local/etc/tpm2-tss/fapi-config.json`:
     - Move all directories to user space, hence avoid access permission issues and `double free or corruption` regression
     - Profile can be `P_RSA2048SHA256` or `P_ECCP256SHA256`. You may use `P_ECCP256SHA256` for better performance. You may also update the `tcti` parameter to switch between hardware or simulated TPM. If you are using TPM simulator, is possible to set ek_cert_less:
-    ```
+    ```all
     {
         "profile_name": "P_RSA2048SHA256",
         "profile_dir": "/usr/local/etc/tpm2-tss/fapi-profiles/",
@@ -3105,7 +3138,7 @@ One-time provision:
     }
     ```
     Let's automate the change:
-    ```
+    ```all
     $ sudo su -c 'rm /usr/local/etc/tpm2-tss/fapi-config.json'
     $ sudo su -c 'echo "{" > /usr/local/etc/tpm2-tss/fapi-config.json'
     $ sudo su -c 'echo "     \"profile_name\": \"P_RSA2048SHA256\"," >> /usr/local/etc/tpm2-tss/fapi-config.json'
@@ -3120,22 +3153,22 @@ One-time provision:
     $ cat /usr/local/etc/tpm2-tss/fapi-config.json
     ```
 2. Reset the FAPI database:
-    ```
+    ```all
     $ sudo rm -rf /home/pi/.local/share/tpm2-tss
     ```
 3. Clear TPM:
-    ```
+    ```all
     $ tpm2_clear -c p
     ```
 4. Provision TPM and initialize the metadata.<br>
 	Storage Root Key (SRK) will be created based on the profile `profile_dir/profile_name` and made persistent at handle `0x81000001` (specified in the profile) with no authorization value. TPM metadata is stored in the directory `system_dir`.
-    ```
+    ```all
     $ tss2_provision
     ```
 
 ## Change Auth
 
-```
+```all
 # create a key with authvalue
 $ tss2_createkey -p /P_RSA2048SHA256/HS/SRK/LeafKey -a "pass123"
 
@@ -3151,7 +3184,7 @@ A callback is registered using Fapi_SetAuthCB to allow the TSS to get authorizat
 
 ## Create Key
 
-```
+```all
 # create a key without authvalue
 $ tss2_createkey -p /P_RSA2048SHA256/HS/SRK/LeafKey1 -t "decrypt,sign" -a ""
 
@@ -3168,7 +3201,7 @@ $ tss2_delete -p /P_RSA2048SHA256/HS/SRK/LeafKey3
 ```
 
 Location of keys in metadata store:
-```
+```all
 # user key: /home/pi/.local/share/tpm2-tss/user/keystore/P_RSA2048SHA256/HS/SRK/
 $ tss2_createkey -p /P_RSA2048SHA256/HS/SRK/LeafKey1 -t "decrypt,sign" -a ""
 
@@ -3183,7 +3216,7 @@ $ tss2_delete -p /P_RSA2048SHA256/HS/SRK/LeafKey2
 
 ## Delete Key
 
-```
+```all
 $ tss2_createkey -p /P_RSA2048SHA256/HS/SRK/LeafKey -a ""
 $ tss2_delete -p /P_RSA2048SHA256/HS/SRK/LeafKey
 ```
@@ -3191,7 +3224,7 @@ $ tss2_delete -p /P_RSA2048SHA256/HS/SRK/LeafKey
 ## Encryption & Decryption
 
 For profile `P_RSA2048SHA256`:
-```
+```all
 # create key
 $ tss2_createkey -p /P_RSA2048SHA256/HS/SRK/LeafKey -a ""
 
@@ -3222,7 +3255,7 @@ $ rm secret.clear secret1.* secret2.* dummy dummy.* key.*
 ## Get Info
 
 Get TPM capabilities:
-```
+```all
 $ tss2_getinfo -o -
 
 # or
@@ -3232,14 +3265,14 @@ $ tss2_getinfo -o info.txt
 
 ## Get EK Certificate
 
-```ignore
+```exclude
 $ tss2_getcertificate -p /P_RSA2048SHA256/HE/EK -o ek.crt
 $ openssl x509 -inform pem -in ek.crt -text
-```ignore
+```
 
 ## Get Random
 
-```
+```all
 $ tss2_getrandom -n 32 --hex -o -
 $ tss2_getrandom -n 32 -f -o random.bin
 $ rm random.bin
@@ -3247,7 +3280,7 @@ $ rm random.bin
 
 ## Get TPM Blob
 
-```
+```all
 $ tss2_createkey -p /P_RSA2048SHA256/HS/SRK/LeafKey -a ""
 
 # get TPM2B_PUBLIC, TPM2B_PRIVATE, and policy
@@ -3261,7 +3294,7 @@ $ rm key.*
 ## Import
 
 Use imported public key for signature verification:
-```
+```all
 # create RSA key
 $ openssl genrsa -out rsa.priv.pem 2048
 $ openssl rsa -in rsa.priv.pem -pubout > rsa.pub.pem
@@ -3288,7 +3321,7 @@ $ rm rsa.* message message.*
 to-do: check if following is possible
 
 Use imported public key for encryption:
-```ignore
+```exclude
 # create RSA key
 $ openssl genrsa -out rsa.priv.pem 2048
 $ openssl rsa -in rsa.priv.pem -pubout > rsa.pub.pem
@@ -3311,11 +3344,11 @@ $ tss2_encrypt -p /ext/RsaPubKey -i secret.clear -o secret.cipher
 # clean up
 $ tss2_delete -p /ext/RsaPubKey
 $ rm rsa.* secret.*
-```ignore
+```
 -->
 
 Import policy:
-```
+```all
 # get a sample policy
 $ cp ~/tpm2-tss/test/data/fapi/policy/pol_signed.json .
 
@@ -3330,7 +3363,7 @@ $ tss2_delete -p /policy/pol_signed
 
 Enumerates and show all objects in the FAPI metadata store:
 
-```
+```all
 $ tss2_list
 ```
 
@@ -3347,7 +3380,7 @@ Immediately after `tss2_provision` you should see:
 <!--
 The data file binary in hex is "736f6d6520646174610a". You will find it in the `pcr.log`.
 -->
-```
+```all
 # extend some data to PCR. The data will be hashed using the respective PCR’s hash algorithm
 $ echo "some data" > data
 $ tss2_pcrextend -x 23 -i data
@@ -3380,7 +3413,7 @@ If you see error "The digest computed from event list does not match the attest.
 
 Is possible to select multiple pcrs: -x "0,16,23"
 -->
-```
+```all
 $ tss2_createkey -p /P_RSA2048SHA256/HS/SRK/LeafKey -a ""
 
 # extend some data to PCR
@@ -3401,7 +3434,7 @@ $ rm quote.* key.* data
 
 ## Seal/Unseal
 
-```
+```all
 $ echo "some secret" > secret.clear
 
 # seal the secret
@@ -3418,7 +3451,7 @@ $ rm secret.*
 
 ## Set/Get App Data
 
-```
+```all
 $ tss2_createkey -p /P_RSA2048SHA256/HS/SRK/LeafKey -a ""
 
 # associate an arbitrary data blob with a given object
@@ -3440,7 +3473,7 @@ $ rm data-in.bin data-out.bin
 
 ## Set/Get Certificate
 
-```
+```all
 $ tss2_createkey -p /P_RSA2048SHA256/HS/SRK/LeafKey -a ""
 
 # create a dummy certificate (follow the CSR flow to obtain a valid certificate)
@@ -3465,7 +3498,7 @@ $ rm dummy.key dummy-in.crt dummy-out.crt
 
 ## Set/Get Description
 
-```
+```all
 $ tss2_createkey -p /P_RSA2048SHA256/HS/SRK/LeafKey -a ""
 
 # assign a human readable description to an object in the metadata store
@@ -3485,7 +3518,7 @@ $ tss2_delete -p /P_RSA2048SHA256/HS/SRK/LeafKey
 ## Signing & Verification
 
 For profile `P_RSA2048SHA256`:
-```
+```all
 # create signing key
 $ tss2_createkey -p /P_RSA2048SHA256/HS/SRK/LeafKey -a ""
 
@@ -3510,7 +3543,7 @@ $ rm message message.* key.*
 ```
 
 For profile `P_ECCP256SHA256`:
-```ignore
+```exclude
 # create signing key
 $ tss2_createkey -p /P_ECCP256SHA256/HS/SRK/LeafKey -a ""
 
@@ -3532,28 +3565,40 @@ $ openssl dgst -sha256 -verify key.pub -keyform pem -signature message.sig messa
 # clean up
 $ tss2_delete -p /P_ECCP256SHA256/HS/SRK/LeafKey
 $ rm message message.* key.*
-```ignore
+```
 
 # CI
 
 Manually trigger the CI workflow using the following command:
 
-```ignore
-git clone https://github.com/wxleong/tpm2-cmd-ref
-cd tpm2-cmd-ref
+```exclude
+$ git clone https://github.com/wxleong/tpm2-cmd-ref ~/tpm2-cmd-ref
+$ cd ~/tpm2-cmd-ref
 
 # Linux
-docker run --cpus=8 \
-           --memory=16g \
-           -it \
-           --env-file .ci/docker.env \
-           -v "$(pwd):/workspace" \
-           "ubuntu:20.04" \
-           /bin/bash -c "/workspace/.ci/docker.sh"
+$ export DOCKER_IMAGE=debian:bullseye
+$ docker run  --cpus=$(nproc) \
+              --memory=7g \
+              -it \
+              --env WORKSPACE_DIR=/workspace \
+              --env DOCKER_IMAGE=$DOCKER_IMAGE \
+              --env-file .ci/docker.env \
+              -v "$(pwd):/workspace" \
+              $DOCKER_IMAGE \
+              /bin/bash -c "/workspace/.ci/docker.sh"
 
 # Windows
-docker run --cpus=8 --memory=16g -it --env-file .ci/docker.env -v "%cd%:/workspace" "ubuntu:20.04" /bin/bash -c "/workspace/.ci/docker.sh"
-```ignore
+$ set DOCKER_IMAGE=debian:bullseye
+$ docker run  --cpus=%NUMBER_OF_PROCESSORS% ^
+              --memory=7g ^
+              -it ^
+              --env WORKSPACE_DIR=/workspace ^
+              --env DOCKER_IMAGE=%DOCKER_IMAGE% ^
+              --env-file .ci/docker.env ^
+              -v "%cd%:/workspace" ^
+              %DOCKER_IMAGE% ^
+              /bin/bash -c "/workspace/.ci/docker.sh"
+```
 
 # References
 

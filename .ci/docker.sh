@@ -6,12 +6,12 @@
 set -exo pipefail
 env
 
-cd $DOCKER_BUILD_DIR
+cd $WORKSPACE_DIR
 
-# mark all generic commands we going to execute
-cat README.md | sed '/^ *```$/,/^ *```$/ s/^ *\$/_M_/' > parse
-# mark tcti specific commands we going to execute
-sed -i '/^ *```sim$/,/^ *```sim$/ s/^ *\$/_M_/' parse
+# mark all generic commands
+cat README.md | sed '/^ *```all$/,/^ *```$/ s/^ *\$/_M_/' > parse
+# mark platform dependent commands
+sed -i '/^ *```.*'"$DOCKER_IMAGE"'.*/,/^ *```$/ s/^ *\$/_M_/' parse
 # comment all lines without the marker
 sed -i '/^_M_/! s/^/# /' parse
 # remove the appended comment from all marked lines
