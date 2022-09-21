@@ -8,7 +8,7 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Launch Container
+    - name: Launch Container (${{ inputs.DOCKER_IMAGE }})
       env:
         PROJECT_NAME: ${{ inputs.PROJECT_NAME }}
         DOCKER_IMAGE: ${{ inputs.DOCKER_IMAGE }}

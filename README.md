@@ -134,13 +134,13 @@ Install generic packages:
 $ sudo apt -y install autoconf-archive libcmocka0 libcmocka-dev procps iproute2 build-essential git pkg-config gcc libtool automake libssl-dev uthash-dev autoconf doxygen libjson-c-dev libini-config-dev libcurl4-openssl-dev uuid-dev pandoc acl libglib2.0-dev xxd
 ```
 
-Install platform dependent packages for Ubuntu:18.04, Ubuntu:20.04:
-```ubuntu:18.04,ubuntu:20.04
+Install platform dependent packages for ubuntu-18.04, ubuntu-20.04:
+```ubuntu-18.04,ubuntu-20.04
 $ sudo apt -y install python-yaml 
 ```
 
-Install platform dependent packages for Ubuntu:22.04:
-```ubuntu:22.04
+Install platform dependent packages for ubuntu-22.04:
+```ubuntu-22.04
 $ git clone -b OpenSSL_1_1_1f https://github.com/openssl/openssl ~/openssl
 $ cd ~/openssl
 $ ./config
@@ -1337,11 +1337,11 @@ $ tpm2_clear -c p
 In the event that TPM key is not created using `tpm2tss-genkey`, use the following tool to make the conversion.
 
 Build the tool and set LD_LIBRARY_PATH:
-```debian:bullseye,debian:buster,ubuntu:18.04,ubuntu:20.04
+```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
 # Debian (bullseye, buster), Ubuntu (18.04, 20.04)
 $ export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/engines-1.1
 ```
-```ubuntu:22.04
+```ubuntu-22.04
 # Ubuntu 22.04
 $ export LD_LIBRARY_PATH=/usr/local/lib/engines-1.1
 ```
@@ -1546,11 +1546,11 @@ $ curl --insecure --engine tpm2tss --key-type ENG --key 0x81000002 --cert rsakey
 - EC sign/verification
 
 Ubuntu:
-```debian:bullseye,debian:buster,ubuntu:18.04,ubuntu:20.04
+```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
 # Debian (bullseye, buster), Ubuntu (18.04, 20.04)
 $ export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/engines-1.1
 ```
-```ubuntu:22.04
+```ubuntu-22.04
 # Ubuntu 22.04
 $ export LD_LIBRARY_PATH=/usr/local/lib/engines-1.1
 ```

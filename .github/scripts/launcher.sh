@@ -15,7 +15,7 @@ docker run \
            --env DOCKER_IMAGE=$DOCKER_IMAGE \
            --env-file .ci/docker.env \
            -v "$GITHUB_WORKSPACE:$DOCKER_BUILD_DIR" \
-           "$DOCKER_IMAGE" \
+           `echo ${DOCKER_IMAGE} | sed 's/-/:/'` \
            /bin/bash -c "$DOCKER_BUILD_DIR/.ci/docker.sh"
 
 exit 0

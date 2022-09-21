@@ -9,26 +9,26 @@ env
 cd $WORKSPACE_DIR
 
 # mark all generic commands
-cat README.md | sed '/^ *```all$/,/^ *```$/ s/^ *\$/_M_/' > parse
+cat README.md | sed '/^ *```all$/,/^ *```$/ s/^ *\$/_M_/' > ${DOCKER_IMAGE}_parse
 # mark platform dependent commands
-sed -i '/^ *```.*'"$DOCKER_IMAGE"'.*/,/^ *```$/ s/^ *\$/_M_/' parse
+sed -i '/^ *```.*'"${DOCKER_IMAGE}"'.*/,/^ *```$/ s/^ *\$/_M_/' ${DOCKER_IMAGE}_parse
 # comment all lines without the marker
-sed -i '/^_M_/! s/^/# /' parse
+sed -i '/^_M_/! s/^/# /' ${DOCKER_IMAGE}_parse
 # remove the appended comment from all marked lines
-sed -i '/^_M_/ s/<--.*//' parse
+sed -i '/^_M_/ s/<--.*//' ${DOCKER_IMAGE}_parse
 # remove the marker
-sed -i 's/^_M_ //' parse
+sed -i 's/^_M_ //' ${DOCKER_IMAGE}_parse
 # remove sudo, it is not necessary in docker
-sed -i 's/sudo //g' parse
+sed -i 's/sudo //g' ${DOCKER_IMAGE}_parse
 
-cp .ci/script.sh ./
-cat parse >> script.sh
-echo -e '\nexit 0' >> script.sh
+cp .ci/script.sh ./${DOCKER_IMAGE}.sh
+cat ${DOCKER_IMAGE}_parse >> ${DOCKER_IMAGE}.sh
+echo -e '\nexit 0' >> ${DOCKER_IMAGE}.sh
 
 # set up dbus for tpm2-abrmd
 apt update
 apt install -y dbus
 #dbus-run-session -- bash
-dbus-run-session -- bash -c ./script.sh
+dbus-run-session -- bash -c ./${DOCKER_IMAGE}.sh
 
 exit 0
