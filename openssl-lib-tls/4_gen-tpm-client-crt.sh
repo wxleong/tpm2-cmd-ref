@@ -1,6 +1,7 @@
-#!/bin/sh -x
+#!/usr/bin/env bash
+set -exo pipefail
 
-export TPM2TSSENGINE_TCTI="mssim:host=localhost,port=2321"
+#export TPM2TSSENGINE_TCTI="mssim:host=localhost,port=2321"
 
 touch ~/.rnd
 
@@ -8,12 +9,12 @@ touch ~/.rnd
 openssl req -new -engine tpm2tss -keyform engine -key 0x81000001 -subj "/CN=TPM/O=Infineon/C=SG" -out tpm.csr
 
 # Generate CA signed client cert
-mkdir ca >/dev/null 2>&1
-rm ca/*
+rm -rf ca 2> /dev/null
+mkdir ca 2> /dev/null
 touch ca/index.txt
 touch ca/index.txt.attr
 echo '01' > ca/serial
-yes | openssl ca -config config -in tpm.csr -out tpm.crt
+(yes || true) | openssl ca -config config -in tpm.csr -out tpm.crt
 
 # Read cert
 #openssl x509 -in tpm.crt -text -noout

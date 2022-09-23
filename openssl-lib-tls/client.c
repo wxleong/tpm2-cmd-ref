@@ -146,7 +146,7 @@ void configure_context(SSL_CTX *pSslContext, const char *clientCert, const char 
         {
             perror("Unable to switch to TPM device mode (/dev/tpmrm0).");
 #else
-        if (!ENGINE_ctrl(pEngine, ENGINE_CMD_BASE + 1, 0, "mssim:host=localhost,port=2321", NULL))
+        if (!ENGINE_ctrl(pEngine, ENGINE_CMD_BASE + 1, 0, "tabrmd:bus_type=session", NULL))
         {
             perror("Unable to switch to TPM simulator mode.");
 #endif

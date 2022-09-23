@@ -25,10 +25,6 @@ cp .ci/script.sh ./${DOCKER_IMAGE}.sh
 cat ${DOCKER_IMAGE}_parse >> ${DOCKER_IMAGE}.sh
 echo -e '\nexit 0' >> ${DOCKER_IMAGE}.sh
 
-# set up dbus for tpm2-abrmd
-apt update
-apt install -y dbus
-#dbus-run-session -- bash
-dbus-run-session -- bash -c ./${DOCKER_IMAGE}.sh
+./${DOCKER_IMAGE}.sh
 
 exit 0

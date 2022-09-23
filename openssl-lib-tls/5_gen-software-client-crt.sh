@@ -1,4 +1,5 @@
-#!/bin/sh -x
+#!/usr/bin/env bash
+set -exo pipefail
 
 touch ~/.rnd
 
@@ -6,12 +7,12 @@ touch ~/.rnd
 openssl req -new -key software.key -subj "/CN=Software/O=Infineon/C=SG" -out software.csr
 
 # Generate CA signed client cert
-mkdir ca >/dev/null 2>&1
-rm ca/*
+rm -rf ca 2> /dev/null
+mkdir ca 2> /dev/null
 touch ca/index.txt
 touch ca/index.txt.attr
 echo '01' > ca/serial
-yes | openssl ca -config config -in software.csr -out software.crt
+(yes || true) | openssl ca -config config -in software.csr -out software.crt
 
 # Read cert
 #openssl x509 -in software.crt -text -noout

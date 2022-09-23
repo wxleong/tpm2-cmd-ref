@@ -146,8 +146,14 @@ $ ./config
 $ make -j$(nproc)
 $ sudo make install
 $ sudo ldconfig
+
+# overwrite the OpenSSL 3.0 binary
 $ sudo rm /usr/bin/openssl
 $ sudo ln -s /usr/local/bin/openssl /usr/bin/openssl
+
+# set default library lookup path
+$ export LIBRARY_PATH=/usr/local/lib
+$ export LD_LIBRARY_PATH=/usr/local/lib
 ```
 
 Download this project for later use:
@@ -249,27 +255,33 @@ Test installation:
     $ sleep 5
     ```
 
-2. Start TPM resource manager:
+2. Start TPM resource manager on a session dbus instead of system dbus:<br>
+    Start a session dbus which is limited to the current login session:
+    ```all
+    $ sudo apt install -y dbus
+    $ export DBUS_SESSION_BUS_ADDRESS=`dbus-daemon --session --print-address --fork`
+    ```
+    Start TPM resource manager:
     ```all
     $ tpm2-abrmd --allow-root --session --tcti=mssim &
     $ sleep 5
     ```
 
-2. Set TCTI:
+3. Set TCTI:
     ```all
     # for tpm2-tools
-    $ export TPM2TOOLS_TCTI="tabrmd:bus_type=session"
+    $ export TPM2TOOLS_TCTI="tabrmd:bus_name=com.intel.tss2.Tabrmd,bus_type=session"
 
     # for tpm2-tss-engine
-    $ export TPM2TSSENGINE_TCTI="tabrmd:bus_type=session"
+    $ export TPM2TSSENGINE_TCTI="tabrmd:bus_name=com.intel.tss2.Tabrmd,bus_type=session"
     ```
 
-3. Perform TPM startup:
+4. Perform TPM startup:
     ```all
     $ tpm2_startup -c
     ```
 
-4. Get random:
+5. Get random:
     ```all
     $ tpm2_getrandom --hex 16
     ```
@@ -1597,8 +1609,8 @@ $ ./examples
 
 ### Server-client TLS Communication
 
-```exclude
-$ cd openssl-lib-tls
+```all
+$ cd ~/tpm2-cmd-ref/openssl-lib-tls
 $ chmod a+x *.sh
 $ ./0_clean-up.sh
 $ ./1_init-tpm-key.sh
@@ -1607,12 +1619,19 @@ $ ./3_gen-ca-crt.sh
 $ ./4_gen-tpm-client-crt.sh
 $ ./5_gen-software-client-crt.sh
 $ ./6_build-server-client.sh
-$ ./7_start-server.sh
 
-# start a new terminal
-$ cd openssl-lib-tls
+# start server
+$ ./7_start-server.sh &
+$ sleep 5
+
+# start client
 $ ./8_start-software-client.sh
 $ ./9_start-tpm-client.sh
+
+# house keeping
+$ ./0_clean-up.sh
+$ pkill server
+$ tpm2_clear -c p
 ```
 
 ## Password Authorization
