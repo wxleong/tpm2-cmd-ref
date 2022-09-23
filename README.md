@@ -1493,23 +1493,36 @@ $ tpm2_clear -c p
 
 ### Nginx & Curl
 
+**to-do: This section is broken, to be fixed**
+
+<!--
+nginx -V
+cat /var/log/nginx/error.log
+-->
+
 Install Nginx on your host:
-```exclude
-$ sudo apt install nginx
+```all
+$ sudo apt install -y nginx
 ```
 
 Add `ssl_engine tpm2tss;` to `/etc/nginx/nginx.conf`, check reference [nginx/nginx.conf](nginx/nginx.conf)
+```exclude
+$ sudo echo "ssl_engine tpm2tss;" >> /etc/nginx/nginx.conf
+```
 
 #### PEM Encoded Key
 
 Create key & self-signed certificate:
-```exclude
+```all
 $ cd /tmp
 $ tpm2tss-genkey -a rsa -s 2048 rsakey.pem
 $ openssl req -new -x509 -engine tpm2tss -keyform engine -key rsakey.pem -subj "/CN=TPM/O=Infineon/C=SG" -out rsakey.crt.pem
 ```
 
 Edit `/etc/nginx/sites-enabled/default` to enable SSL, check reference [nginx/default-pem](nginx/default-pem)
+```all
+$ sudo cp ~/tpm2-cmd-ref/nginx/default-pem /etc/nginx/sites-enabled/default
+```
 
 Restart Nginx:
 ```exclude
@@ -1533,6 +1546,9 @@ $ openssl req -new -x509 -engine tpm2tss -keyform engine -key 0x81000002 -subj "
 ```
 
 Edit `/etc/nginx/sites-enabled/default` to enable SSL, check reference [nginx/default-persistent](nginx/default-persistent)
+```all
+$ sudo cp ~/tpm2-cmd-ref/nginx/default-persistent /etc/nginx/sites-enabled/default
+```
 
 Restart Nginx:
 ```exclude
@@ -1542,6 +1558,11 @@ $ sudo service nginx restart
 Using Curl to test the connection:
 ```exclude
 $ curl --insecure --engine tpm2tss --key-type ENG --key 0x81000002 --cert rsakey.crt.pem https://127.0.0.1
+```
+
+House keeping:
+```all
+$ tpm2_clear -c p
 ```
 
 ## OpenSSL Library
