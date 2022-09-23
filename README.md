@@ -17,7 +17,7 @@ OPTIGA™ TPM 2.0 command reference and code examples.
     - **[Clear Control](#clear-control)**
     - **[Create Keys](#create-keys)**
     - **[Dictionary Attack Protection](#dictionary-attack-protection)**
-	- **[Display TPM Capabilities](#display-tpm-capabilities)**
+    - **[Display TPM Capabilities](#display-tpm-capabilities)**
     - **[EK Credential](#ek-credential)**
     - **[Encrypted Session](#encrypted-session)**
     - **[Encryption & Decryption](#encryption--decryption)**
@@ -44,7 +44,7 @@ OPTIGA™ TPM 2.0 command reference and code examples.
     - **[Persistent Key](#persistent-key)**
     - **[PKCS #11](#pkcs-11)**
     - **[Quote](#quote)**
-	- **[Read EK Certificate](#read-ek-certificate)**
+    - **[Read EK Certificate](#read-ek-certificate)**
     - **[Read Public](#read-public)**
     - **[Seal](#seal)**
     - **[Secure Key Transfer (Duplicate Key)](#secure-key-transfer-duplicate-key)**
@@ -107,14 +107,14 @@ OPTIGA™ TPM 2.0 command reference and code examples.
 - Debian (buster, bullseye), Ubuntu (18.04, 20.04, 22.04)
 
 <!--
-- For simulated TPM 2.0, tested on: 
+- For simulated TPM 2.0, tested on:
   ```exclude
   $ lsb_release -a
   No LSB modules are available.
-  Distributor ID:	Ubuntu
-  Description:	Ubuntu 20.04.2 LTS
-  Release:	20.04
-  Codename:	focal
+  Distributor ID:  Ubuntu
+  Description:     Ubuntu 20.04.2 LTS
+  Release:         20.04
+  Codename:        focal
 
   $ uname -a
   Linux ubuntu 5.8.0-59-generic #66~20.04.1-Ubuntu SMP Thu Jun 17 11:14:10 UTC 2021 x86_64 x86_64 x86_64 GNU/Linux
@@ -136,7 +136,7 @@ $ sudo apt -y install autoconf-archive libcmocka0 libcmocka-dev procps iproute2 
 
 Install platform dependent packages for ubuntu-18.04, ubuntu-20.04:
 ```ubuntu-18.04,ubuntu-20.04
-$ sudo apt -y install python-yaml 
+$ sudo apt -y install python-yaml
 ```
 
 Install platform dependent packages for ubuntu-22.04:
@@ -243,7 +243,7 @@ Test installation:
     ```all
     # for tpm2-tools
     $ export TPM2TOOLS_TCTI="tabrmd:bus_type=session"
-    
+
     # for tpm2-tss-engine
     $ export TPM2TSSENGINE_TCTI="tabrmd:bus_type=session"
     ```
@@ -329,7 +329,7 @@ Add or remove TPM2 commands to the audited commands list.
 <ins><b>tpm2_getcommandauditdigest</b></ins>
 
 Retrieve the command audit attestation data from the TPM. The attestation data includes the audit digest of the commands in the setlist setup using the command `tpm2_setcommandauditstatus`. Also the attestation data includes the digest of the list of commands setup for audit. The audit digest algorith is setup in the `tpm2_setcommandauditstatus`.
-       
+
 tpm2_getcommandauditdigest -c signing.key.ctx -g sha256 -m attest.out -s signature.out
 -->
 
@@ -358,16 +358,16 @@ $ tpm2_verifysignature -c signing.key.ctx -g sha256 -m attest.out -s signature.o
 ```
 The `attest.out` is:
 - TPM2B_ATTEST ->
-	- TPMS_ATTEST ->
-		- TPMI_ST_ATTEST with the value of TPM_ST_ATTEST_CERTIFY, it determines the data type of TPMU_ATTEST 
-		- TPMU_ATTEST ->
-			- TPMS_CERTIFY_INFO ->
-				- Qualified Name of the certified object
+    - TPMS_ATTEST ->
+        - TPMI_ST_ATTEST with the value of TPM_ST_ATTEST_CERTIFY, it determines the data type of TPMU_ATTEST
+        - TPMU_ATTEST ->
+            - TPMS_CERTIFY_INFO ->
+                - Qualified Name of the certified object
 
 <!-- Needs TPM2_CertifyX509 but has not implemented in tpm2-tools yet
 <ins><b>tpm2_certifyX509certutil</b></ins>
 
-`tpm2_certifyX509certutil` generates a partial certificate that is suitable as the third input parameter for TPM2_certifyX509 command, however, TPM2_CertifyX509 is not implemented in tpm2-tools yet. 
+`tpm2_certifyX509certutil` generates a partial certificate that is suitable as the third input parameter for TPM2_certifyX509 command, however, TPM2_CertifyX509 is not implemented in tpm2-tools yet.
 
 The purpose of TPM2_CertifyX509 is to generate an X.509 certificate that proves an object with a specific public key and attributes is loaded in the TPM. In contrast to TPM2_Certify, which uses a TCG-defined data structure to convey attestation information (`attest.out`), TPM2_CertifyX509 encodes the attestation information in a DER-encoded X.509 certificate that is compliant with RFC5280 Internet X.509 Public Key Infrastructure Certificate and Certificate Revocation List (CRL) Profile.
 -->
@@ -582,7 +582,7 @@ $ tpm2_load -C primary_sh.ctx -u aeskey.pub -r aeskey.priv -c aeskey.ctx
 
 ## Dictionary Attack Protection
 
-For practice, try this on simulator. Use hardware TPM at your own risk. 
+For practice, try this on simulator. Use hardware TPM at your own risk.
 
 Before we start, understand the basic:
 - failedTries (TPM2_PT_LOCKOUT_COUNTER): Increment when an authorization failed or unorderly shutdown
@@ -612,28 +612,28 @@ To trigger a lockout:
 ```exclude
 $ tpm2_createprimary -G ecc -c primary.ctx -p primary123
 $ tpm2_create -G ecc -C primary.ctx -P badauth -u key.pub -r key.priv
-WARNING:esys:src/tss2-esys/api/Esys_Create.c:398:Esys_Create_Finish() Received TPM Error 
-ERROR:esys:src/tss2-esys/api/Esys_Create.c:134:Esys_Create() Esys Finish ErrorCode (0x0000098e) 
+WARNING:esys:src/tss2-esys/api/Esys_Create.c:398:Esys_Create_Finish() Received TPM Error
+ERROR:esys:src/tss2-esys/api/Esys_Create.c:134:Esys_Create() Esys Finish ErrorCode (0x0000098e)
 ERROR: Esys_Create(0x98E) - tpm:session(1):the authorization HMAC check failed and DA counter incremented
 ERROR: Unable to run tpm2_create
 $ tpm2_create -G ecc -C primary.ctx -P badauth -u key.pub -r key.priv
-WARNING:esys:src/tss2-esys/api/Esys_Create.c:398:Esys_Create_Finish() Received TPM Error 
-ERROR:esys:src/tss2-esys/api/Esys_Create.c:134:Esys_Create() Esys Finish ErrorCode (0x0000098e) 
+WARNING:esys:src/tss2-esys/api/Esys_Create.c:398:Esys_Create_Finish() Received TPM Error
+ERROR:esys:src/tss2-esys/api/Esys_Create.c:134:Esys_Create() Esys Finish ErrorCode (0x0000098e)
 ERROR: Esys_Create(0x98E) - tpm:session(1):the authorization HMAC check failed and DA counter incremented
 ERROR: Unable to run tpm2_create
 $ tpm2_create -G ecc -C primary.ctx -P badauth -u key.pub -r key.priv
-WARNING:esys:src/tss2-esys/api/Esys_Create.c:398:Esys_Create_Finish() Received TPM Error 
-ERROR:esys:src/tss2-esys/api/Esys_Create.c:134:Esys_Create() Esys Finish ErrorCode (0x0000098e) 
+WARNING:esys:src/tss2-esys/api/Esys_Create.c:398:Esys_Create_Finish() Received TPM Error
+ERROR:esys:src/tss2-esys/api/Esys_Create.c:134:Esys_Create() Esys Finish ErrorCode (0x0000098e)
 ERROR: Esys_Create(0x98E) - tpm:session(1):the authorization HMAC check failed and DA counter incremented
 ERROR: Unable to run tpm2_create
 $ tpm2_create -G ecc -C primary.ctx -P badauth -u key.pub -r key.priv
-WARNING:esys:src/tss2-esys/api/Esys_Create.c:398:Esys_Create_Finish() Received TPM Error 
-ERROR:esys:src/tss2-esys/api/Esys_Create.c:134:Esys_Create() Esys Finish ErrorCode (0x0000098e) 
+WARNING:esys:src/tss2-esys/api/Esys_Create.c:398:Esys_Create_Finish() Received TPM Error
+ERROR:esys:src/tss2-esys/api/Esys_Create.c:134:Esys_Create() Esys Finish ErrorCode (0x0000098e)
 ERROR: Esys_Create(0x98E) - tpm:session(1):the authorization HMAC check failed and DA counter incremented
 ERROR: Unable to run tpm2_create
 $ tpm2_create -G ecc -C primary.ctx -P badauth -u key.pub -r key.priv
-WARNING:esys:src/tss2-esys/api/Esys_Create.c:398:Esys_Create_Finish() Received TPM Error 
-ERROR:esys:src/tss2-esys/api/Esys_Create.c:134:Esys_Create() Esys Finish ErrorCode (0x00000921) 
+WARNING:esys:src/tss2-esys/api/Esys_Create.c:398:Esys_Create_Finish() Received TPM Error
+ERROR:esys:src/tss2-esys/api/Esys_Create.c:134:Esys_Create() Esys Finish ErrorCode (0x00000921)
 ERROR: Esys_Create(0x921) - tpm:warn(2.0): authorizations for objects subject to DA protection are not allowed at this time because the TPM is in DA lockout mode
 ERROR: Unable to run tpm2_create
 ```
@@ -780,7 +780,7 @@ Check what commands are supported:
 $ tpm2_getcap commands
 ```
 
-## EK Credential 
+## EK Credential
 
 Create EK and AK:
 ```all
@@ -1118,7 +1118,7 @@ $ tpm2_nvread 0x01000000 -C 0x01000000 -P pass123 | xxd -p
   tpm2_nvread 0x01000000 -C 0x01000000 -P fail123
   tpm2_nvread 0x01000000 -C 0x01000000 -P fail123
   tpm2_nvread 0x01000000 -C 0x01000000 -P fail123
-  tpm2_nvread 0x01000000 -C 0x01000000 -P fail123 <---- authorization via authValue is now locked out 
+  tpm2_nvread 0x01000000 -C 0x01000000 -P fail123 <---- authorization via authValue is now locked out
 
 # exit authValue lockout
 $ tpm2_nvwrite 0x01000000 -C o -i data
@@ -1228,7 +1228,7 @@ $ tpm2_flushcontext session.ctx
 
 # restricting the number of uses of an object with pinpass
 $ tpm2_startauthsession --policy-session -S session.ctx
-$ tpm2_policysecret -S session.ctx -c 0x01000000 pass123 
+$ tpm2_policysecret -S session.ctx -c 0x01000000 pass123
 $ tpm2_nvread 0x01000000 -C o | xxd -p                   <---- notice pinCount increases by 1
 $ tpm2_policysecret -S session.ctx -c 0x01000000 pass123
 $ tpm2_policysecret -S session.ctx -c 0x01000000 pass123
@@ -1457,10 +1457,10 @@ Microsoft TPM2.0 simulator:
 ```exclude
 $ cd openssl-cli-tls-mssim
 $ chmod a+x *.sh
-$ ./0_clean-up.sh 
-$ ./1_init-tpm.sh 
-$ ./2_gen-ca-crt.sh 
-$ ./3_gen-client-crt.sh 
+$ ./0_clean-up.sh
+$ ./1_init-tpm.sh
+$ ./2_gen-ca-crt.sh
+$ ./3_gen-client-crt.sh
 $ ./4_start-server.sh
 
 # start a new terminal
@@ -1472,10 +1472,10 @@ Hardware TPM:
 ```exclude
 $ cd openssl-cli-tls-optiga-tpm
 $ chmod a+x *.sh
-$ ./0_clean-up.sh 
-$ ./1_init-tpm.sh 
-$ ./2_gen-ca-crt.sh 
-$ ./3_gen-client-crt.sh 
+$ ./0_clean-up.sh
+$ ./1_init-tpm.sh
+$ ./2_gen-ca-crt.sh
+$ ./3_gen-client-crt.sh
 $ ./4_start-server.sh
 
 # start a new terminal
@@ -1571,14 +1571,14 @@ $ ./examples
 ```exclude
 $ cd openssl-lib-tls
 $ chmod a+x *.sh
-$ ./0_clean-up.sh 
-$ ./1_init-tpm-key.sh 
-$ ./2_init-software-key.sh 
-$ ./3_gen-ca-crt.sh 
-$ ./4_gen-tpm-client-crt.sh 
-$ ./5_gen-software-client-crt.sh 
-$ ./6_build-server-client.sh 
-$ ./7_start-server.sh 
+$ ./0_clean-up.sh
+$ ./1_init-tpm-key.sh
+$ ./2_init-software-key.sh
+$ ./3_gen-ca-crt.sh
+$ ./4_gen-tpm-client-crt.sh
+$ ./5_gen-software-client-crt.sh
+$ ./6_build-server-client.sh
+$ ./7_start-server.sh
 
 # start a new terminal
 $ cd openssl-lib-tls
@@ -2252,7 +2252,7 @@ $ tpm2_nvundefine 0x01000001 -C o
 
 Restricts duplication to a specific new parent.
 
-<!-- 
+<!--
 If duplication is allowed, authorization must always be provided by a policy session and the authPolicy equation of the object must contain a command that sets the policy command code to TPM_CC_Duplicate. tpm2_policyduplicationselect/tpm2_policycommandcode(TPM_CC_Duplicate) both will set policy command code to TPM_CC_Duplicate. There is no need to have both policies involve in a single operation.
 -->
 
@@ -3161,7 +3161,7 @@ One-time provision:
     $ tpm2_clear -c p
     ```
 4. Provision TPM and initialize the metadata.<br>
-	Storage Root Key (SRK) will be created based on the profile `profile_dir/profile_name` and made persistent at handle `0x81000001` (specified in the profile) with no authorization value. TPM metadata is stored in the directory `system_dir`.
+   Storage Root Key (SRK) will be created based on the profile `profile_dir/profile_name` and made persistent at handle `0x81000001` (specified in the profile) with no authorization value. TPM metadata is stored in the directory `system_dir`.
     ```all
     $ tss2_provision
     ```
@@ -3179,7 +3179,7 @@ $ tss2_createkey -p /P_RSA2048SHA256/HS/SRK/LeafKey -a "pass123"
 $ tss2_delete -p /P_RSA2048SHA256/HS/SRK/LeafKey
 ```
 <!--
-A callback is registered using Fapi_SetAuthCB to allow the TSS to get authorization values from the application layer. 
+A callback is registered using Fapi_SetAuthCB to allow the TSS to get authorization values from the application layer.
 -->
 
 ## Create Key
