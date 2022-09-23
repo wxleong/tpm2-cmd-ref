@@ -1470,33 +1470,25 @@ $ tpm2_clear -c p
 ### Server-client TLS Communication
 
 Microsoft TPM2.0 simulator:
-```exclude
-$ cd openssl-cli-tls-mssim
+```all
+$ cd ~/tpm2-cmd-ref/openssl-cli-tls-mssim
 $ chmod a+x *.sh
 $ ./0_clean-up.sh
 $ ./1_init-tpm.sh
 $ ./2_gen-ca-crt.sh
 $ ./3_gen-client-crt.sh
-$ ./4_start-server.sh
 
-# start a new terminal
-$ cd openssl-cli-tls-mssim
+# start server
+$ ./4_start-server.sh &
+$ sleep 5
+
+# start client
 $ ./5_start-good-client.sh
-```
 
-Hardware TPM:
-```exclude
-$ cd openssl-cli-tls-optiga-tpm
-$ chmod a+x *.sh
+# house keeping
 $ ./0_clean-up.sh
-$ ./1_init-tpm.sh
-$ ./2_gen-ca-crt.sh
-$ ./3_gen-client-crt.sh
-$ ./4_start-server.sh
-
-# start a new terminal
-$ cd openssl-cli-tls-mssim
-$ ./5_start-good-client.sh
+$ pkill openssl
+$ tpm2_clear -c p
 ```
 
 ### Nginx & Curl

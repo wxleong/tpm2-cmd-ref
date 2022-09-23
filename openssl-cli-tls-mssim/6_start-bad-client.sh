@@ -1,6 +1,7 @@
-#!/bin/sh -x
+#!/usr/bin/env bash
+set -exo pipefail
 
-export TPM2TSSENGINE_TCTI="mssim:host=localhost,port=2321"
+#export TPM2TSSENGINE_TCTI="mssim:host=localhost,port=2321"
 
 #
 # CAfile: A file containing trusted certificates to use during server authentication 

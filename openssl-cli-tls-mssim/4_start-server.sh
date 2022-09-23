@@ -1,4 +1,5 @@
-#!/bin/sh -x
+#!/usr/bin/env bash
+set -exo pipefail
 
 #
 # CAfile: A file containing trusted certificates to use during client authentication
