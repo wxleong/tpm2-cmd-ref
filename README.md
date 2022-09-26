@@ -135,7 +135,7 @@ Install generic packages:
 $ sudo apt -y install autoconf-archive libcmocka0 libcmocka-dev procps iproute2 build-essential git pkg-config gcc libtool automake libssl-dev uthash-dev autoconf doxygen libjson-c-dev libini-config-dev libcurl4-openssl-dev uuid-dev pandoc acl libglib2.0-dev xxd
 ```
 
-Install platform dependent packages on ubuntu-18.04, ubuntu-20.04:
+Install platform dependent packages on Ubuntu (18.04, 20.04):
 ```ubuntu-18.04,ubuntu-20.04
 $ sudo apt -y install python-yaml
 ```
@@ -181,7 +181,7 @@ $ sudo make install
 $ sudo ldconfig
 ```
 
-Install tpm2-tss-engine:
+Install tpm2-tss-engine on Debian (Bullseye, Buster), Ubuntu (18.04, 20.04):
 ```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
 $ git clone https://github.com/tpm2-software/tpm2-tss-engine ~/tpm2-tss-engine
 $ cd ~/tpm2-tss-engine
@@ -193,7 +193,7 @@ $ sudo make install
 $ sudo ldconfig
 ```
 
-Install tpm2-tss-engine on ubuntu-22.04:
+Install tpm2-tss-engine on Ubuntu-22.04:
 ```ubuntu-22.04
 $ git clone https://github.com/tpm2-software/tpm2-openssl ~/tpm2-openssl
 $ cd ~/tpm2-openssl
@@ -1345,11 +1345,11 @@ In the event that TPM key is not created using `tpm2tss-genkey`, use the followi
 
 Build the tool and set LD_LIBRARY_PATH:
 ```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
-# Debian (bullseye, buster), Ubuntu (18.04, 20.04)
+# Debian (Bullseye, Buster), Ubuntu (18.04, 20.04)
 $ export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/engines-1.1
 ```
 ```ubuntu-22.04
-# Ubuntu 22.04
+# Ubuntu-22.04
 $ export LD_LIBRARY_PATH=/usr/local/lib/engines-1.1
 ```
 ```exclude
@@ -1567,11 +1567,11 @@ $ tpm2_clear -c p
 
 Ubuntu:
 ```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
-# Debian (bullseye, buster), Ubuntu (18.04, 20.04)
+# Debian (Bullseye, Buster), Ubuntu (18.04, 20.04)
 $ export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/engines-1.1
 ```
 ```ubuntu-22.04
-# Ubuntu 22.04
+# Ubuntu-22.04
 $ export LD_LIBRARY_PATH=/usr/local/lib/engines-1.1
 ```
 ```all
