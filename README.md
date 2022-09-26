@@ -157,7 +157,7 @@ $ export LD_LIBRARY_PATH=/usr/local/lib
 ```
 
 Download this project for later use:
-```all
+```exclude
 $ git clone https://github.com/wxleong/tpm2-cmd-ref ~/tpm2-cmd-ref
 ```
 
