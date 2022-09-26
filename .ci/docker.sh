@@ -25,6 +25,10 @@ cp .ci/script.sh ./${DOCKER_IMAGE}.sh
 cat ${DOCKER_IMAGE}_parse >> ${DOCKER_IMAGE}.sh
 echo -e '\nexit 0' >> ${DOCKER_IMAGE}.sh
 
+# set parameters for tzdata configuration use
+TZ=Etc/UCT
+ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
 ./${DOCKER_IMAGE}.sh
 
 exit 0

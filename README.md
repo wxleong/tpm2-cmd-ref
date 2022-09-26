@@ -193,7 +193,7 @@ $ sudo make install
 $ sudo ldconfig
 ```
 
-Install tpm2-tss-engine on Ubuntu-22.04:
+Install tpm2-openssl (substitute for tpm2-tss-engine) on Ubuntu-22.04:
 ```ubuntu-22.04
 $ git clone https://github.com/tpm2-software/tpm2-openssl ~/tpm2-openssl
 $ cd ~/tpm2-openssl
@@ -205,8 +205,8 @@ $ sudo make install
 $ sudo ldconfig
 ```
 
-Install Microsoft TPM2.0 simulator:
-```all
+Install Microsoft TPM2.0 simulator on Debian (Bullseye, Buster), Ubuntu (18.04, 20.04):
+```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
 $ git clone https://github.com/microsoft/ms-tpm-20-ref ~/ms-tpm-20-ref
 $ cd ~/ms-tpm-20-ref/TPMCmd
 $ ./bootstrap
@@ -215,9 +215,32 @@ $ make -j$(nproc)
 $ sudo make install
 ```
 
+Install libtpms-based TPM emulator on Ubuntu-22.04:
+```ubuntu-22.04
+# Install dependencies
+$ apt-get install -y dh-autoreconf libtasn1-6-dev net-tools libgnutls28-dev expect gawk socat libfuse-dev libseccomp-dev make libjson-glib-dev
+
+# Install libtpms-devel
+$ git clone https://github.com/stefanberger/libtpms ~/libtpms
+$ cd ~/libtpms
+$ git checkout v0.9.5
+$ ./autogen.sh --with-tpm2 --with-openssl --with-cuse
+$ make -j$(nproc)
+$ sudo make install
+$ sudo ldconfig
+
+# Install Libtpms-based TPM emulator
+$ git clone https://github.com/stefanberger/swtpm ~/swtpm
+$ cd ~/swtpm
+$ git checkout v0.7.3
+$ ./autogen.sh --with-openssl --prefix=/usr
+$ make -j$(nproc)
+$ sudo make install
+```
+
 Test installation:
-1. Start TPM simulator:
-    ```all
+1. Start Microsoft TPM2.0 simulator on Debian (Bullseye, Buster), Ubuntu (18.04, 20.04):
+    ```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
     $ cd ~
     $ tpm2-simulator &
     LIBRARY_COMPATIBILITY_CHECK is ON
@@ -233,6 +256,13 @@ Test installation:
     Platform server listening on port 2322
     $ sleep 5
     ```
+    <br>
+    Start Libtpms-based TPM emulator on Ubuntu-22.04:
+    ```ubuntu-22.04
+    $ mkdir /tmp/emulated_tpm
+    $ swtpm socket --tpm2 --flags not-need-init --tpmstate dir=/tmp/emulated_tpm --server type=tcp,port=2321 --ctrl type=tcp,port=2322 &
+    $ sleep 5
+    ```
 
 2. Start TPM resource manager on a session dbus instead of system dbus:<br>
     Start a session dbus which is limited to the current login session:
@@ -240,9 +270,14 @@ Test installation:
     $ sudo apt install -y dbus
     $ export DBUS_SESSION_BUS_ADDRESS=`dbus-daemon --session --print-address --fork`
     ```
-    Start TPM resource manager:
-    ```all
+    Start TPM resource manager on Debian (Bullseye, Buster), Ubuntu (18.04, 20.04):
+    ```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
     $ tpm2-abrmd --allow-root --session --tcti=mssim &
+    $ sleep 5
+    ```
+    Start TPM resource manager on Ubuntu-22.04:
+    ```ubuntu-22.04
+    $ tpm2-abrmd --allow-root --session --tcti=swtpm:host=127.0.0.1,port=2321 &
     $ sleep 5
     ```
 
