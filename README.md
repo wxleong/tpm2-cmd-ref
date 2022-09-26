@@ -138,23 +138,6 @@ Install platform dependent packages on ubuntu-18.04, ubuntu-20.04:
 ```ubuntu-18.04,ubuntu-20.04
 $ sudo apt -y install python-yaml
 ```
-Downgrade OpenSSL 3.0 to 1.1.1f on ubuntu-22.04 (to-do: this is avoidable by replacing tpm2-software/tpm2-tss-engine with tpm2-openssl):
-```ubuntu-22.04
-$ git clone -b OpenSSL_1_1_1f https://github.com/openssl/openssl ~/openssl
-$ cd ~/openssl
-$ ./config
-$ make -j$(nproc)
-$ sudo make install
-$ sudo ldconfig
-
-# overwrite the OpenSSL 3.0 binary
-$ sudo rm /usr/bin/openssl
-$ sudo ln -s /usr/local/bin/openssl /usr/bin/openssl
-
-# set default library lookup path
-$ export LIBRARY_PATH=/usr/local/lib
-$ export LD_LIBRARY_PATH=/usr/local/lib
-```
 
 Download this project for later use:
 ```exclude
@@ -198,7 +181,7 @@ $ sudo ldconfig
 ```
 
 Install tpm2-tss-engine:
-```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04,ubuntu-22.04
+```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
 $ git clone https://github.com/tpm2-software/tpm2-tss-engine ~/tpm2-tss-engine
 $ cd ~/tpm2-tss-engine
 $ git checkout v1.1.0
@@ -209,12 +192,8 @@ $ sudo make install
 $ sudo ldconfig
 ```
 
-<!--
-to-do: this guide will not work with OpenSSL 3.0 due to API change (engine -> provider)
-       let's include OpenSSL 3.0 in future
-
 Install tpm2-tss-engine on ubuntu-22.04:
-```exclude
+```ubuntu-22.04
 $ git clone https://github.com/tpm2-software/tpm2-openssl ~/tpm2-openssl
 $ cd ~/tpm2-openssl
 $ git checkout 1.1.0
@@ -224,7 +203,6 @@ $ make -j$(nproc)
 $ sudo make install
 $ sudo ldconfig
 ```
--->
 
 Install Microsoft TPM2.0 simulator:
 ```all
