@@ -1,4 +1,5 @@
-[![example workflow](https://github.com/wxleong/tpm2-cmd-ref/workflows/CI/badge.svg)](https://github.com/wxleong/tpm2-cmd-ref/actions)
+[![example workflow](https://github.com/wxleong/tpm2-cmd-ref/workflows/CI/badge.svg?branch=develop-openssl3.x)](https://github.com/wxleong/tpm2-cmd-ref/actions)
+**REMEMBER TO UPDATE BADGE BRANCH**
 
 # Introduction
 
