@@ -16,8 +16,8 @@ sed -i '/^ *```.*'"${DOCKER_IMAGE}"'.*/,/^ *```$/ s/^ *\$/_M_/' ${DOCKER_IMAGE}_
 sed -i '/^_M_/! s/^/# /' ${DOCKER_IMAGE}_parse
 # remove the appended comment from all marked lines
 sed -i '/^_M_/ s/<--.*//' ${DOCKER_IMAGE}_parse
-# remove the marker
-sed -i 's/^_M_ //' ${DOCKER_IMAGE}_parse
+# remove the marker and prepend the time command
+sed -i 's/^_M_ /time /' ${DOCKER_IMAGE}_parse
 # remove sudo, it is not necessary in docker
 sed -i 's/sudo //g' ${DOCKER_IMAGE}_parse
 

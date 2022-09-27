@@ -149,7 +149,7 @@ Install tpm2-tss:
 ```all
 $ git clone https://github.com/tpm2-software/tpm2-tss ~/tpm2-tss
 $ cd ~/tpm2-tss
-$ git checkout 3.1.0
+$ git checkout 3.2.0
 $ ./bootstrap
 $ ./configure
 $ make -j$(nproc)
@@ -218,13 +218,13 @@ $ sudo make install
 Install libtpms-based TPM emulator on Ubuntu-22.04:
 ```ubuntu-22.04
 # Install dependencies
-$ apt-get install -y dh-autoreconf libtasn1-6-dev net-tools libgnutls28-dev expect gawk socat libfuse-dev libseccomp-dev make libjson-glib-dev
+$ apt-get install -y dh-autoreconf libtasn1-6-dev net-tools libgnutls28-dev expect gawk socat libfuse-dev libseccomp-dev make libjson-glib-dev gnutls-bin
 
 # Install libtpms-devel
 $ git clone https://github.com/stefanberger/libtpms ~/libtpms
 $ cd ~/libtpms
 $ git checkout v0.9.5
-$ ./autogen.sh --with-tpm2 --with-openssl --with-cuse
+$ ./autogen.sh --with-tpm2 --with-openssl
 $ make -j$(nproc)
 $ sudo make install
 $ sudo ldconfig
@@ -236,6 +236,7 @@ $ git checkout v0.7.3
 $ ./autogen.sh --with-openssl --prefix=/usr
 $ make -j$(nproc)
 $ sudo make install
+$ sudo ldconfig
 ```
 
 Test installation:
@@ -256,10 +257,11 @@ Test installation:
     Platform server listening on port 2322
     $ sleep 5
     ```
-    <br>
     Start Libtpms-based TPM emulator on Ubuntu-22.04:
     ```ubuntu-22.04
     $ mkdir /tmp/emulated_tpm
+    #$ swtpm_setup --tpmstate /tmp/emulated_tpm --create-ek-cert --create-platform-cert --tpm2 --overwrite
+    #$ sleep 5
     $ swtpm socket --tpm2 --flags not-need-init --tpmstate dir=/tmp/emulated_tpm --server type=tcp,port=2321 --ctrl type=tcp,port=2322 &
     $ sleep 5
     ```
@@ -286,8 +288,11 @@ Test installation:
     # for tpm2-tools
     $ export TPM2TOOLS_TCTI="tabrmd:bus_name=com.intel.tss2.Tabrmd,bus_type=session"
 
-    # for tpm2-tss-engine
+    # for tpm2-tss-engine (Debian Bullseye, Debian Buster, Ubuntu-18.04, Ubuntu-20.04)
     $ export TPM2TSSENGINE_TCTI="tabrmd:bus_name=com.intel.tss2.Tabrmd,bus_type=session"
+
+    # for tpm2-openssl (Ubuntu-22.04)
+    $ export TPM2OPENSSL_TCTI="tabrmd:bus_name=com.intel.tss2.Tabrmd,bus_type=session"
     ```
 
 4. Perform TPM startup:
@@ -324,7 +329,7 @@ Perform TPM startup after launching the simulator, otherwise, all subsequent com
 $ tpm2_startup -c
 ```
 
-Keep an eye on the TPM transient and session memory:
+When you are not using the TPM resource manager, keep an eye on the TPM transient and session memory:
 ```all
 $ tpm2_getcap handles-transient
 $ tpm2_getcap handles-loaded-session
