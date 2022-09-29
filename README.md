@@ -30,22 +30,24 @@ OPTIGA™ TPM 2.0 command reference and code examples.
         - **[Under Hierarchy](#under-hierarchy)**
     - **[NV Storage](#nv-storage)**
     - **[OpenSSL 1.x CLI](#openssl-1x-cli)**
-        - **[PEM Encoded Key](#pem-encoded-key)**
-            - **[Conversion to PEM Encoded Key](#conversion-to-pem-encoded-key)**
+        - **[PEM Encoded Key Object](#pem-encoded-key-object)**
+            - **[Conversion to PEM Encoded Key Object](#conversion-to-pem-encoded-key-object)**
         - **[Persistent Key](#persistent-key-1)**
         - **[Server-client TLS Communication](#server-client-tls-communication)**
         - **[Nginx & Curl](#nginx--curl)**
-            - **[PEM Encoded Key](#pem-encoded-key-1)**
+            - **[PEM Encoded Key Object](#pem-encoded-key-object-1)**
             - **[Persistent Key](#persistent-key-2)**
     - **[OpenSSL 1.x Library](#openssl-1x-library)**
         - **[General Examples](#general-examples)**
         - **[Server-client TLS Communication](#server-client-tls-communication-1)**
     - **[OpenSSL 3.x CLI](#openssl-3x-cli)**
-        - **[PEM Encoded Key](#pem-encoded-key-2)**
+        - **[PEM Encoded Key Object](#pem-encoded-key-object-2)**
         - **[Serialized Key](#serialized-key)**
         - **[Persistent Key](#persistent-key-3)**
         - **[Server-client TLS Communication](#server-client-tls-communication-2)**
     - **[OpenSSL 3.x Library](#openssl-3x-library)**
+        - **[General Examples](#general-examples-1)**
+        - **[Server-client TLS Communication](#server-client-tls-communication-3)**
     - **[Password Authorization](#password-authorization)**
     - **[PCR](#pcr)**
     - **[Persistent Key](#persistent-key)**
@@ -111,7 +113,7 @@ OPTIGA™ TPM 2.0 command reference and code examples.
 
 # Prerequisites
 
-- Debian (buster, bullseye), Ubuntu (18.04, 20.04, 22.04)
+- x86_64 system: Debian (buster, bullseye), Ubuntu (18.04, 20.04, 22.04)
 
 <!--
 - For simulated TPM 2.0, tested on:
@@ -161,6 +163,10 @@ $ ./configure
 $ make -j$(nproc)
 $ sudo make install
 $ sudo ldconfig
+
+# For debugging:
+# Possible levels are: NONE, ERROR, WARNING, INFO, DEBUG, TRACE
+$ export TSS2_LOG=all+TRACE
 ```
 
 Install tpm2-tools:
@@ -205,7 +211,7 @@ $ git clone https://github.com/tpm2-software/tpm2-openssl ~/tpm2-openssl
 $ cd ~/tpm2-openssl
 $ git checkout 1.1.0
 $ ./bootstrap
-$ ./configure
+$ ./configure <--- to debug add "--enable-debug"
 $ make -j$(nproc)
 $ sudo make install
 $ sudo ldconfig
@@ -267,7 +273,7 @@ Test installation:
     ```ubuntu-22.04
     $ mkdir /tmp/emulated_tpm
     $ swtpm_setup --create-config-files root --tpmstate /tmp/emulated_tpm --create-ek-cert --create-platform-cert --tpm2 --overwrite
-    $ swtpm socket --tpm2 --flags not-need-init --tpmstate dir=/tmp/emulated_tpm --server type=tcp,port=2321 --ctrl type=tcp,port=2322 &
+    $ swtpm socket --tpm2 --flags not-need-init --tpmstate dir=/tmp/emulated_tpm --server type=tcp,port=2321 --ctrl type=tcp,port=2322 &   <--- to debug, add "--log level=?"
     $ sleep 5
     ```
 
@@ -1311,7 +1317,7 @@ Generate random value:
 $ openssl rand -engine tpm2tss -hex 10
 ```
 
-### PEM Encoded Key
+### PEM Encoded Key Object
 
 Create parent key:
 ```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
@@ -1386,7 +1392,7 @@ Clean up:
 $ tpm2_clear -c p
 ```
 
-#### Conversion to PEM Encoded Key
+#### Conversion to PEM Encoded Key Object
 
 In the event that TPM key is not created using `tpm2tss-genkey`, use the following tool to make the conversion.
 
@@ -1543,7 +1549,7 @@ Add `ssl_engine tpm2tss;` to `/etc/nginx/nginx.conf`, check reference [nginx/ngi
 $ sudo echo "ssl_engine tpm2tss;" >> /etc/nginx/nginx.conf
 ```
 
-#### PEM Encoded Key
+#### PEM Encoded Key Object
 
 Create key & self-signed certificate:
 ```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
@@ -1609,17 +1615,11 @@ This section is for Debian (Bullseye, Buster), Ubuntu (18.04, 20.04).
 - RSA encryption/decryption/sign/verification
 - EC sign/verification
 
-Ubuntu:
+Debian (Bullseye, Buster), Ubuntu (18.04, 20.04):
 ```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
-# Debian (Bullseye, Buster), Ubuntu (18.04, 20.04)
 $ export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/engines-1.1
-```
-```ubuntu-22.04
-# Ubuntu-22.04
-$ export LD_LIBRARY_PATH=/usr/local/lib/engines-1.1
-```
-```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
-$ gcc -Wall -o examples ~/tpm2-cmd-ref/openssl-lib-general-examples/examples.c -L$LD_LIBRARY_PATH -lssl -lcrypto -ltpm2tss
+
+$ gcc -Wall -o examples ~/tpm2-cmd-ref/openssl1-lib-general-examples/examples.c -L$LD_LIBRARY_PATH -lssl -lcrypto -ltpm2tss
 $ ./examples
 ```
 
@@ -1633,7 +1633,7 @@ $ ./examples
 ### Server-client TLS Communication
 
 ```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
-$ cd ~/tpm2-cmd-ref/openssl-lib-tls
+$ cd ~/tpm2-cmd-ref/openssl1-lib-tls
 $ chmod a+x *.sh
 $ ./0_clean-up.sh
 $ ./1_init-tpm-key.sh
@@ -1671,7 +1671,7 @@ Generate random value:
 $ openssl rand -provider tpm2 -hex 10
 ```
 
-### PEM Encoded Key
+### PEM Encoded Key Object
 
 Create parent key:
 ```ubuntu-22.04
@@ -1702,18 +1702,18 @@ $ openssl pkeyutl -provider tpm2 -provider base -inkey rsakey.pem -decrypt -in s
 $ diff secret.clear secret.decipher
 ```
 
-RSA signing & verification:
+RSA signing & verification (padding schemes: pkcs1, pss):
 ```ubuntu-22.04
 $ dd bs=1 count=32 </dev/urandom > data
-$ openssl pkeyutl -provider tpm2 -provider base -inkey rsakey.pem -sign -rawin -in data -out data.sig
-$ openssl pkeyutl -pubin -inkey rsakey.pub.pem -verify -rawin -in data -sigfile data.sig
+$ openssl pkeyutl -provider tpm2 -provider base -pkeyopt pad-mode:pss -digest sha256 -inkey rsakey.pem -sign -rawin -in data -out data.sig
+$ openssl pkeyutl -pkeyopt pad-mode:pss -digest sha256 -pubin -inkey rsakey.pub.pem -verify -rawin -in data -sigfile data.sig
 ```
 
 EC signing & verification:
 ```ubuntu-22.04
 $ dd bs=1 count=32 </dev/urandom > data
-$ openssl pkeyutl -provider tpm2 -provider base -inkey eckey.pem -sign -rawin -in data -out data.sig
-$ openssl pkeyutl -pubin -inkey eckey.pub.pem -verify -rawin -in data -sigfile data.sig
+$ openssl pkeyutl -provider tpm2 -provider base -digest sha256 -inkey eckey.pem -sign -rawin -in data -out data.sig
+$ openssl pkeyutl -digest sha256 -pubin -inkey eckey.pub.pem -verify -rawin -in data -sigfile data.sig
 ```
 
 Create self-signed certificate:
@@ -1801,6 +1801,45 @@ $ tpm2_clear -c p
 ## OpenSSL 3.x Library
 
 This section is for Ubuntu-22.04.
+
+### General Examples
+
+- Get random
+- RSA/EC key creation
+- RSA encryption/decryption/sign/verification
+- EC sign/verification
+
+```ubuntu-22.04
+$ gcc -Wall -o examples ~/tpm2-cmd-ref/openssl3-lib-general-examples/examples.c -lssl -lcrypto
+$ ./examples
+```
+
+### Server-client TLS Communication
+
+```exclude
+$ cd ~/tpm2-cmd-ref/openssl3-lib-tls
+$ chmod a+x *.sh
+$ ./0_clean-up.sh
+$ ./1_init-tpm-key.sh
+$ ./2_init-software-key.sh
+$ ./3_gen-ca-crt.sh
+$ ./4_gen-tpm-client-crt.sh
+$ ./5_gen-software-client-crt.sh
+$ ./6_build-server-client.sh
+
+# start server
+$ ./7_start-server.sh &
+$ sleep 5
+
+# start client
+$ ./8_start-software-client.sh
+$ ./9_start-tpm-client.sh
+
+# house keeping
+$ ./0_clean-up.sh
+$ pkill server
+$ tpm2_clear -c p
+```
 
 ## Password Authorization
 
