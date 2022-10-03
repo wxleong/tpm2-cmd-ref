@@ -166,7 +166,7 @@ $ sudo ldconfig
 
 # For debugging:
 # Possible levels are: NONE, ERROR, WARNING, INFO, DEBUG, TRACE
-$ export TSS2_LOG=all+TRACE
+# export TSS2_LOG=all+TRACE
 ```
 
 Install tpm2-tools:
@@ -212,7 +212,7 @@ $ cd ~/tpm2-openssl
 $ git checkout 1.1.0
 $ ./bootstrap
 $ ./configure <--- to debug add "--enable-debug"
-$ make -j$(nproc)
+$ make -j$(nproc) <--- "$ make check" to execute self-test. Do not run test in multithreading mode
 $ sudo make install
 $ sudo ldconfig
 ```
@@ -1816,7 +1816,7 @@ $ ./examples
 
 ### Server-client TLS Communication
 
-```exclude
+```ubuntu-22.04
 $ cd ~/tpm2-cmd-ref/openssl3-lib-tls
 $ chmod a+x *.sh
 $ ./0_clean-up.sh

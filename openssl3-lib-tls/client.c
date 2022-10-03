@@ -35,8 +35,9 @@
 #include <netdb.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
-#ifdef ENABLE_TPM_TSS_ENGINE
-#include <openssl/engine.h>
+#ifdef ENABLE_TPM_TSS_PROVIDER
+#include <openssl/provider.h>
+#include <openssl/store.h>
 #endif
 
 int connect_socket(const char *hostname, int port)
@@ -70,9 +71,9 @@ int connect_socket(const char *hostname, int port)
 }
 
 void init_openssl()
-{ 
-    OpenSSL_add_all_algorithms();    
-    SSL_load_error_strings();  
+{
+    OpenSSL_add_all_algorithms();
+    SSL_load_error_strings();
     SSL_library_init();
 }
 
@@ -81,7 +82,7 @@ void cleanup_openssl()
     EVP_cleanup();
 }
 
-SSL_CTX *create_context()
+SSL_CTX *create_ssl_context()
 {
     const SSL_METHOD *method;
     SSL_CTX *ctx;
@@ -98,10 +99,82 @@ SSL_CTX *create_context()
     return ctx;
 }
 
-void configure_context(SSL_CTX *pSslContext, const char *clientCert, const char *clientKey, 
-                       const char *caCert)
+SSL_CTX *configure_context(const char *clientCert, const char *clientKey,
+                           const char *caCert)
 {
     int32_t sslStatus = -1;
+    SSL_CTX *pSslContext = NULL;
+
+#ifdef ENABLE_TPM_TSS_PROVIDER
+    /* Set TPM-based key */
+    {
+        OSSL_PROVIDER *prov = NULL;
+        OSSL_STORE_CTX *ctx = NULL;
+        OSSL_STORE_INFO *info = NULL;
+        EVP_PKEY *pKey = NULL;
+
+        /* Load TPM2 provider */
+        if ((prov = OSSL_PROVIDER_load(NULL, "tpm2")) == NULL)
+        {
+            perror("Unable to load OpenSSL provider: tpm2.");
+            exit(EXIT_FAILURE);
+        }
+
+        /* Self-test */
+        if (!OSSL_PROVIDER_self_test(prov))
+        {
+            perror("OpenSSL provider (tpm2) self test failed.");
+            exit(EXIT_FAILURE);
+        }
+
+        /* Load default provider */
+        if ((prov = OSSL_PROVIDER_load(NULL, "default")) == NULL)
+        {
+            perror("Unable to load OpenSSL provider: default.");
+            exit(EXIT_FAILURE);
+        }
+
+        /* Self-test */
+        if (!OSSL_PROVIDER_self_test(prov))
+        {
+            perror("OpenSSL provider (default) self test failed.");
+            exit(EXIT_FAILURE);
+        }
+
+        if ((ctx = OSSL_STORE_open_ex(clientKey, NULL, NULL,
+                                      NULL, NULL, NULL, NULL, NULL)) == NULL ||
+            !OSSL_STORE_expect(ctx, OSSL_STORE_INFO_PKEY) ||
+            (info = OSSL_STORE_load(ctx)) == NULL ||
+            (pKey = OSSL_STORE_INFO_get1_PKEY(info)) == NULL) {
+            perror("OpenSSL provider (tpm2) key loading failed.");
+            exit(EXIT_FAILURE);
+        }
+
+        OSSL_STORE_close(ctx);
+
+        pSslContext = create_ssl_context();
+
+        sslStatus = SSL_CTX_use_PrivateKey(pSslContext, pKey);
+        if (sslStatus <= 0) {
+            ERR_print_errors_fp(stderr);
+            exit(EXIT_FAILURE);
+        }
+
+        /* free this to avoid memory leak? */
+        //OSSL_STORE_INFO_free(info);
+        //EVP_PKEY_free(pKey);
+    }
+#else
+    (void) sslStatus;
+
+    pSslContext = create_ssl_context();
+
+    /* Set software-based key */
+    if (SSL_CTX_use_PrivateKey_file(pSslContext, clientKey, SSL_FILETYPE_PEM) <= 0 ) {
+        ERR_print_errors_fp(stderr);
+        exit(EXIT_FAILURE);
+    }
+#endif
 
     SSL_CTX_set_ecdh_auto(pSslContext, 1);
 
@@ -111,73 +184,13 @@ void configure_context(SSL_CTX *pSslContext, const char *clientCert, const char 
         exit(EXIT_FAILURE);
     }
 
-#ifdef ENABLE_TPM_TSS_ENGINE
-    /* Set TPM-based key */
-    {
-        const char  *pEngineName = "tpm2tss";
-        ENGINE  *pEngine = NULL;
-        UI_METHOD *pUiMethod = NULL;
-        EVP_PKEY *pKey = NULL;
-
-        /* Load TPM OpenSSL engine. */
-        ENGINE_load_builtin_engines();
-        pEngine = ENGINE_by_id(pEngineName);
-
-        if (!pEngine)
-        {
-            perror("Unable to load TPM OpenSSL engine.");
-            exit(EXIT_FAILURE);
-        }
-
-        if (!ENGINE_init(pEngine))
-        {
-            perror("Unable to init TPM2 Engine.");
-            exit(EXIT_FAILURE);
-        }
-
-        if (!ENGINE_set_default(pEngine, ENGINE_METHOD_ALL))
-        {
-            perror("Unable to set TPM2 Engine.");
-            exit(EXIT_FAILURE);
-        }
-
-#ifdef ENABLE_OPTIGA_TPM
-        if (!ENGINE_ctrl(pEngine, ENGINE_CMD_BASE + 1, 0, "device:/dev/tpmrm0", NULL))
-        {
-            perror("Unable to switch to TPM device mode (/dev/tpmrm0).");
-#else
-        if (!ENGINE_ctrl(pEngine, ENGINE_CMD_BASE + 1, 0, "tabrmd:bus_type=session", NULL))
-        {
-            perror("Unable to switch to TPM simulator mode.");
-#endif
-            exit(EXIT_FAILURE);
-        }
-
-        pUiMethod = UI_OpenSSL();
-        if (!pUiMethod)
-        {
-            perror("Unable to get OpenSSL UI method.");
-            exit(EXIT_FAILURE);
-        }
-
-        pKey = ENGINE_load_private_key(pEngine, "0x81000001", pUiMethod, NULL);
-        
-        sslStatus = SSL_CTX_use_PrivateKey(pSslContext, pKey);
-        if (sslStatus <= 0) {
-            ERR_print_errors_fp(stderr);
-            exit(EXIT_FAILURE);
-        }
-    }
-#else
-    (void)sslStatus;
-    /* Set software-based key */
-    if (SSL_CTX_use_PrivateKey_file(pSslContext, clientKey, SSL_FILETYPE_PEM) <= 0 ) {
-        ERR_print_errors_fp(stderr);
+    /* Verify client cert */
+    if (!SSL_CTX_check_private_key(pSslContext)) {
+        perror("Private key does not match with certificate public key.");
         exit(EXIT_FAILURE);
     }
-#endif
 
-    //SSL_CTX_set_verify(pSslContext, SSL_VERIFY_NONE, NULL); // not to verify server 
+    //SSL_CTX_set_verify(pSslContext, SSL_VERIFY_NONE, NULL); // not to verify server
     SSL_CTX_set_verify(pSslContext, SSL_VERIFY_PEER, NULL); // to verify server certificate
 
     /* Set CA certificate for server verification */
@@ -203,6 +216,8 @@ void configure_context(SSL_CTX *pSslContext, const char *clientCert, const char 
         if (rootCaFile != NULL)
             fclose(rootCaFile);
     }
+
+    return pSslContext;
 }
 
 void showCert(SSL* ssl)
@@ -230,17 +245,17 @@ int main(int argc, char **argv)
     SSL *ssl;
 
     init_openssl();
-    ctx = create_context();
-#ifdef ENABLE_TPM_TSS_ENGINE
-    configure_context(ctx, "tpm.crt", "0x81000001", "local-ca.crt");
+
+#ifdef ENABLE_TPM_TSS_PROVIDER
+    ctx = configure_context("tpm.crt", "handle:0x81000001", "local-ca.crt");
 #else
-    configure_context(ctx, "software.crt", "software.key", "local-ca.crt");
+    ctx = configure_context("software.crt", "software.key", "local-ca.crt");
 #endif
 
     sock = connect_socket("localhost", 8443);
     ssl = SSL_new(ctx);
     SSL_set_fd(ssl, sock);
-    
+
     if (SSL_connect(ssl) <= 0) {
         ERR_print_errors_fp(stderr);
     } else {
@@ -251,7 +266,7 @@ int main(int argc, char **argv)
         showCert(ssl);
 
         SSL_write(ssl, msg, strlen(msg)); // send message to server
-        bytes = SSL_read(ssl, buf, sizeof(buf) - 1); // receive message from server 
+        bytes = SSL_read(ssl, buf, sizeof(buf) - 1); // receive message from server
         if (bytes) {
             buf[bytes] = '\0';
             printf("\nReceived: \"%s\"\n", buf);
