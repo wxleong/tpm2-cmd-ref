@@ -207,7 +207,7 @@ ec_evp_pkey_sign_verify(EVP_PKEY *pKey)
     int ret = -1;
 
     //ctx = EVP_PKEY_CTX_new(pKey, NULL);
-    ctx = EVP_PKEY_CTX_new_from_pkey(NULL, pKey, NULL);
+    ctx = EVP_PKEY_CTX_new_from_pkey(NULL, pKey, "provider=tpm2");
     if (!ctx) {
         PRINT("EC sign EVP_PKEY_CTX_new_from_pkey error");
         goto err1;
@@ -242,7 +242,7 @@ ec_evp_pkey_sign_verify(EVP_PKEY *pKey)
 
     PRINT("EC verify signature");
 
-    if ((ctx2 = EVP_PKEY_CTX_new_from_pkey(OSSL_LIB_CTX_new(), pKey, NULL)) == NULL) {
+    if ((ctx2 = EVP_PKEY_CTX_new_from_pkey(NULL, pKey, "provider=default")) == NULL) {
         PRINT("EC verify signature EVP_PKEY_CTX_new_from_pkey error");
         goto err3;
     }
@@ -291,7 +291,7 @@ rsa_evp_pkey_sign_verify(EVP_PKEY *pKey)
     size_t sha256Len = 32, sigLen = 0;
     int ret = -1;
 
-    ctx = EVP_PKEY_CTX_new_from_pkey(NULL, pKey, NULL);
+    ctx = EVP_PKEY_CTX_new_from_pkey(NULL, pKey, "provider=tpm2");
     if (!ctx) {
         PRINT("RSA sign EVP_PKEY_CTX_new_from_pkey error");
         goto err1;
@@ -338,7 +338,7 @@ rsa_evp_pkey_sign_verify(EVP_PKEY *pKey)
 
     PRINT("RSA verify signature");
 
-    if ((ctx2 = EVP_PKEY_CTX_new_from_pkey(OSSL_LIB_CTX_new(), pKey, NULL)) == NULL) {
+    if ((ctx2 = EVP_PKEY_CTX_new_from_pkey(NULL, pKey, "provider=default")) == NULL) {
         PRINT("RSA verify signature EVP_PKEY_CTX_new_from_pkey error");
         goto err3;
     }
@@ -391,7 +391,7 @@ rsa_evp_pkey_encrypt_decrypt(EVP_PKEY *pKey)
 
     /* Encryption (RSA_PKCS1_PADDING == TPM2_ALG_RSAES) */
 
-    if ((ctx = EVP_PKEY_CTX_new_from_pkey(OSSL_LIB_CTX_new(), pKey, NULL)) == NULL) {
+    if ((ctx = EVP_PKEY_CTX_new_from_pkey(NULL, pKey, "provider=default")) == NULL) {
         PRINT("RSA encrypt EVP_PKEY_CTX_new_from_pkey error");
         goto err1;
     }
@@ -418,7 +418,7 @@ rsa_evp_pkey_encrypt_decrypt(EVP_PKEY *pKey)
 
     /* Decryption (RSA_PKCS1_PADDING == TPM2_ALG_RSAES) */
 
-    ctx2 = EVP_PKEY_CTX_new_from_pkey(NULL, pKey, NULL);
+    ctx2 = EVP_PKEY_CTX_new_from_pkey(NULL, pKey, "provider=tpm2");
     if (!ctx2) {
         PRINT("RSA decrypt EVP_PKEY_CTX_new_from_pkey error");
         goto err3;
@@ -474,7 +474,8 @@ int main(int argc, char **argv)
     (void) argv;
 
     int ret = 1;
-    OSSL_PROVIDER *prov = NULL;
+    OSSL_PROVIDER *prov_default = NULL;
+    OSSL_PROVIDER *prov_tpm2 = NULL;
     EVP_PKEY *pRsaKey = NULL;
     EVP_PKEY *pEcKey = NULL;
 
@@ -490,12 +491,20 @@ int main(int argc, char **argv)
      * Here we relies on ENV TPM2OPENSSL_TCTI
      */
 
+    /* Load default provider */
+    if ((prov_default = OSSL_PROVIDER_load(NULL, "default")) == NULL)
+        goto err0;
+
+    /* Self-test */
+    if (!OSSL_PROVIDER_self_test(prov_default))
+        goto err1;
+
     /* Load TPM2 provider */
-    if ((prov = OSSL_PROVIDER_load(NULL, "tpm2")) == NULL)
+    if ((prov_tpm2 = OSSL_PROVIDER_load(NULL, "tpm2")) == NULL)
         goto err1;
 
     /* Self-test */
-    if (!OSSL_PROVIDER_self_test(prov))
+    if (!OSSL_PROVIDER_self_test(prov_tpm2))
         goto err2;
 
     /* Generate true random */
@@ -539,8 +548,10 @@ err4:
 err3:
     EVP_PKEY_free(pRsaKey);
 err2:
-    OSSL_PROVIDER_unload(prov);
+    OSSL_PROVIDER_unload(prov_tpm2);
 err1:
+    OSSL_PROVIDER_unload(prov_default);
+err0:
 
     return ret;
 }
