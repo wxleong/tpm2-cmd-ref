@@ -108,34 +108,35 @@ SSL_CTX *configure_context(const char *clientCert, const char *clientKey,
 #ifdef ENABLE_TPM_TSS_PROVIDER
     /* Set TPM-based key */
     {
-        OSSL_PROVIDER *prov = NULL;
+        OSSL_PROVIDER *prov_tpm2 = NULL;
+        OSSL_PROVIDER *prov_default = NULL;
         OSSL_STORE_CTX *ctx = NULL;
         OSSL_STORE_INFO *info = NULL;
         EVP_PKEY *pKey = NULL;
 
         /* Load TPM2 provider */
-        if ((prov = OSSL_PROVIDER_load(NULL, "tpm2")) == NULL)
+        if ((prov_tpm2 = OSSL_PROVIDER_load(NULL, "tpm2")) == NULL)
         {
             perror("Unable to load OpenSSL provider: tpm2.");
             exit(EXIT_FAILURE);
         }
 
         /* Self-test */
-        if (!OSSL_PROVIDER_self_test(prov))
+        if (!OSSL_PROVIDER_self_test(prov_tpm2))
         {
             perror("OpenSSL provider (tpm2) self test failed.");
             exit(EXIT_FAILURE);
         }
 
         /* Load default provider */
-        if ((prov = OSSL_PROVIDER_load(NULL, "default")) == NULL)
+        if ((prov_default = OSSL_PROVIDER_load(NULL, "default")) == NULL)
         {
             perror("Unable to load OpenSSL provider: default.");
             exit(EXIT_FAILURE);
         }
 
         /* Self-test */
-        if (!OSSL_PROVIDER_self_test(prov))
+        if (!OSSL_PROVIDER_self_test(prov_default))
         {
             perror("OpenSSL provider (default) self test failed.");
             exit(EXIT_FAILURE);
@@ -163,6 +164,8 @@ SSL_CTX *configure_context(const char *clientCert, const char *clientKey,
         /* free this to avoid memory leak? */
         //OSSL_STORE_INFO_free(info);
         //EVP_PKEY_free(pKey);
+        //OSSL_PROVIDER_unload(prov_default);
+        //OSSL_PROVIDER_unload(prov_tpm2);
     }
 #else
     (void) sslStatus;
