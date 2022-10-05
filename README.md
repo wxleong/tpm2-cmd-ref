@@ -3394,17 +3394,19 @@ One-time provision:
     ```
     Let's automate the change:
     ```all
-    $ sudo su -c 'rm /usr/local/etc/tpm2-tss/fapi-config.json'
-    $ sudo su -c 'echo "{" > /usr/local/etc/tpm2-tss/fapi-config.json'
-    $ sudo su -c 'echo "     \"profile_name\": \"P_RSA2048SHA256\"," >> /usr/local/etc/tpm2-tss/fapi-config.json'
-    $ sudo su -c 'echo "     \"profile_dir\": \"/usr/local/etc/tpm2-tss/fapi-profiles/\"," >> /usr/local/etc/tpm2-tss/fapi-config.json'
-    $ sudo su -c 'echo "     \"user_dir\": \"/home/pi/.local/share/tpm2-tss/user/keystore/\"," >> /usr/local/etc/tpm2-tss/fapi-config.json'
-    $ sudo su -c 'echo "     \"system_dir\": \"/home/pi/.local/share/tpm2-tss/system/keystore/\"," >> /usr/local/etc/tpm2-tss/fapi-config.json'
-    $ sudo su -c 'echo "     \"tcti\": \"tabrmd:bus_type=session\"," >> /usr/local/etc/tpm2-tss/fapi-config.json'
-    $ sudo su -c 'echo "     \"ek_cert_less\": \"yes\"," >> /usr/local/etc/tpm2-tss/fapi-config.json'
-    $ sudo su -c 'echo "     \"system_pcrs\" : []," >> /usr/local/etc/tpm2-tss/fapi-config.json'
-    $ sudo su -c 'echo "     \"log_dir\" : \"/home/pi/.local/share/tpm2-tss/eventlog/\"" >> /usr/local/etc/tpm2-tss/fapi-config.json'
-    $ sudo su -c 'echo "}" >> /usr/local/etc/tpm2-tss/fapi-config.json'
+    $ rm /usr/local/etc/tpm2-tss/fapi-config.json
+    $ cat > text << EOF
+    $ {
+    $     "profile_name": "P_RSA2048SHA256",
+    $     "profile_dir": "/usr/local/etc/tpm2-tss/fapi-profiles/",
+    $     "user_dir": "/home/pi/.local/share/tpm2-tss/user/keystore/",
+    $     "system_dir": "/home/pi/.local/share/tpm2-tss/system/keystore/",
+    $     "tcti": "tabrmd:bus_type=session",
+    $     "ek_cert_less": "yes",
+    $     "system_pcrs" : [],
+    $     "log_dir" : "/home/pi/.local/share/tpm2-tss/eventlog/"
+    $ }
+    $ EOF
     $ cat /usr/local/etc/tpm2-tss/fapi-config.json
     ```
 2. Reset the FAPI database:
