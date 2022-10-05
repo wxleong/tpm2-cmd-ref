@@ -3384,12 +3384,12 @@ One-time provision:
     {
         "profile_name": "P_RSA2048SHA256",
         "profile_dir": "/usr/local/etc/tpm2-tss/fapi-profiles/",
-        "user_dir": "/home/pi/.local/share/tpm2-tss/user/keystore/",
-        "system_dir": "/home/pi/.local/share/tpm2-tss/system/keystore/",
+        "user_dir": "/tmp/tpm2-tss/user/keystore/",
+        "system_dir": "/tmp/tpm2-tss/system/keystore/",
         "tcti": "tabrmd:bus_type=session",
         "ek_cert_less": "yes",
         "system_pcrs" : [],
-        "log_dir" : "/home/pi/.local/share/tpm2-tss/eventlog/"
+        "log_dir" : "/tmp/tpm2-tss/eventlog/"
     }
     ```
     Let's automate the change:
@@ -3399,12 +3399,12 @@ One-time provision:
     $ {
     $     "profile_name": "P_RSA2048SHA256",
     $     "profile_dir": "/usr/local/etc/tpm2-tss/fapi-profiles/",
-    $     "user_dir": "/home/pi/.local/share/tpm2-tss/user/keystore/",
-    $     "system_dir": "/home/pi/.local/share/tpm2-tss/system/keystore/",
+    $     "user_dir": "/tmp/tpm2-tss/user/keystore/",
+    $     "system_dir": "/tmp/tpm2-tss/system/keystore/",
     $     "tcti": "tabrmd:bus_type=session",
     $     "ek_cert_less": "yes",
     $     "system_pcrs" : [],
-    $     "log_dir" : "/home/pi/.local/share/tpm2-tss/eventlog/"
+    $     "log_dir" : "/tmp/tpm2-tss/eventlog/"
     $ }
     $ EOF
     $ cat /usr/local/etc/tpm2-tss/fapi-config.json

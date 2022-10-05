@@ -8,8 +8,8 @@ env
 
 cd $WORKSPACE_DIR
 
-# mark all generic commands
-cat README.md | sed '/^ *```all$/,/^ *```$/ s/^ *\$/_M_/' > ${DOCKER_IMAGE}_parse
+# mark generic commands
+cat README.md | sed '/^ *```all.*$/,/^ *```$/ s/^ *\$/_M_/' > ${DOCKER_IMAGE}_parse
 # mark platform dependent commands
 sed -i '/^ *```.*'"${DOCKER_IMAGE}"'.*/,/^ *```$/ s/^ *\$/_M_/' ${DOCKER_IMAGE}_parse
 # comment all lines without the marker
@@ -18,6 +18,8 @@ sed -i '/^_M_/! s/^/# /' ${DOCKER_IMAGE}_parse
 sed -i '/^_M_/ s/<--.*//' ${DOCKER_IMAGE}_parse
 # remove the marker and prepend the time command
 sed -i 's/^_M_ /time /' ${DOCKER_IMAGE}_parse
+# remove time command if requested
+sed -i '/^# *```.*'timeless'.*/,/^# *```$/ s/^time //' ${DOCKER_IMAGE}_parse
 # remove sudo, it is not necessary in docker
 sed -i 's/sudo //g' ${DOCKER_IMAGE}_parse
 
