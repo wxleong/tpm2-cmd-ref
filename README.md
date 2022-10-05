@@ -3395,7 +3395,7 @@ One-time provision:
     Let's automate the change:
     ```all
     $ rm /usr/local/etc/tpm2-tss/fapi-config.json
-    $ cat > text << EOF
+    $ cat > /usr/local/etc/tpm2-tss/fapi-config.json << EOF
     $ {
     $     "profile_name": "P_RSA2048SHA256",
     $     "profile_dir": "/usr/local/etc/tpm2-tss/fapi-profiles/",
