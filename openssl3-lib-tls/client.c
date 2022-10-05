@@ -89,7 +89,7 @@ SSL_CTX *create_ssl_context()
 
     method = SSLv23_client_method();
 
-    ctx = SSL_CTX_new(method);
+    ctx = SSL_CTX_new_ex(NULL, "provider=default,provider=tpm2", method);
     if (!ctx) {
         perror("Unable to create SSL context");
         ERR_print_errors_fp(stderr);
@@ -142,7 +142,7 @@ SSL_CTX *configure_context(const char *clientCert, const char *clientKey,
             exit(EXIT_FAILURE);
         }
 
-        if ((ctx = OSSL_STORE_open_ex(clientKey, NULL, NULL,
+        if ((ctx = OSSL_STORE_open_ex(clientKey, NULL, "provider=tpm2",
                                       NULL, NULL, NULL, NULL, NULL)) == NULL ||
             !OSSL_STORE_expect(ctx, OSSL_STORE_INFO_PKEY) ||
             (info = OSSL_STORE_load(ctx)) == NULL ||
@@ -161,7 +161,7 @@ SSL_CTX *configure_context(const char *clientCert, const char *clientKey,
             exit(EXIT_FAILURE);
         }
 
-        /* free this to avoid memory leak? */
+        /* Free these to avoid memory leak? */
         //OSSL_STORE_INFO_free(info);
         //EVP_PKEY_free(pKey);
         //OSSL_PROVIDER_unload(prov_default);
