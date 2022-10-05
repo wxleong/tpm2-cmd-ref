@@ -1,4 +1,5 @@
-[![example workflow](https://github.com/wxleong/tpm2-cmd-ref/workflows/CI/badge.svg?branch=master)](https://github.com/wxleong/tpm2-cmd-ref/actions)
+[![example workflow](https://github.com/wxleong/tpm2-cmd-ref/workflows/CI/badge.svg?branch=develop-nginx-curl)](https://github.com/wxleong/tpm2-cmd-ref/actions)
+**Remember to update the CI badge link**
 
 # Introduction
 
