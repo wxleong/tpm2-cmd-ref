@@ -3393,7 +3393,7 @@ One-time provision:
     }
     ```
     Let's automate the change:
-    ```all
+    ```all,timeless
     $ rm /usr/local/etc/tpm2-tss/fapi-config.json
     $ cat > /usr/local/etc/tpm2-tss/fapi-config.json << EOF
     $ {
