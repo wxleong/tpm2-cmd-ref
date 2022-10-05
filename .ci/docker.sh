@@ -16,14 +16,18 @@ sed -i '/^ *```.*'"${DOCKER_IMAGE}"'.*/,/^ *```$/ s/^ *\$/_M_/' ${DOCKER_IMAGE}_
 sed -i '/^_M_/! s/^/# /' ${DOCKER_IMAGE}_parse
 # remove the appended comment from all marked lines
 sed -i '/^_M_/ s/<--.*//' ${DOCKER_IMAGE}_parse
-# remove the marker
-sed -i 's/^_M_ //' ${DOCKER_IMAGE}_parse
+# remove the marker and prepend the time command
+sed -i 's/^_M_ /time /' ${DOCKER_IMAGE}_parse
 # remove sudo, it is not necessary in docker
 sed -i 's/sudo //g' ${DOCKER_IMAGE}_parse
 
 cp .ci/script.sh ./${DOCKER_IMAGE}.sh
 cat ${DOCKER_IMAGE}_parse >> ${DOCKER_IMAGE}.sh
 echo -e '\nexit 0' >> ${DOCKER_IMAGE}.sh
+
+# set parameters for tzdata configuration use
+TZ=Etc/UCT
+ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 ./${DOCKER_IMAGE}.sh
 
