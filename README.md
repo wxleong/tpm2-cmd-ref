@@ -1548,11 +1548,6 @@ Add `ssl_engine tpm2tss;` to `/etc/nginx/nginx.conf`, check reference [nginx/ngi
 $ sudo cp ~/tpm2-cmd-ref/nginx/nginx.conf /etc/nginx/nginx.conf
 ```
 
-Edit the default `openssl.cnf`:
-```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
-$ sudo cp ~/tpm2-cmd-ref/nginx/openssl.cnf /usr/lib/ssl/openssl.cnf
-```
-
 #### PEM Encoded Key Object
 
 Create key & self-signed certificate:
@@ -1573,6 +1568,12 @@ $ pkill tpm2-abrmd
 $ sleep 5
 ```
 
+Edit the default `openssl.cnf`:
+```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
+$ mv /usr/lib/ssl/openssl.cnf /usr/lib/ssl/openssl.cnf.bkup
+$ cp ~/tpm2-cmd-ref/nginx/openssl.cnf /usr/lib/ssl/openssl.cnf
+```
+
 Restart Nginx:
 ```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
 $ sudo service nginx restart
@@ -1587,6 +1588,11 @@ Start TPM resource manager:
 ```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
 $ tpm2-abrmd --allow-root --session --tcti=mssim &
 $ sleep 5
+```
+
+Restore `openssl.cnf`:
+```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
+$ mv /usr/lib/ssl/openssl.cnf.bkup /usr/lib/ssl/openssl.cnf
 ```
 
 #### Persistent Key
@@ -1611,6 +1617,12 @@ $ pkill tpm2-abrmd
 $ sleep 5
 ```
 
+Edit the default `openssl.cnf`:
+```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
+$ mv /usr/lib/ssl/openssl.cnf /usr/lib/ssl/openssl.cnf.bkup
+$ cp ~/tpm2-cmd-ref/nginx/openssl.cnf /usr/lib/ssl/openssl.cnf
+```
+
 Restart Nginx:
 ```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
 $ sudo service nginx restart
@@ -1625,6 +1637,11 @@ Start TPM resource manager:
 ```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
 $ tpm2-abrmd --allow-root --session --tcti=mssim &
 $ sleep 5
+```
+
+Restore `openssl.cnf`:
+```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
+$ mv /usr/lib/ssl/openssl.cnf.bkup /usr/lib/ssl/openssl.cnf
 ```
 
 #### Housekeeping
