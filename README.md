@@ -1553,12 +1553,6 @@ Edit the default `openssl.cnf`:
 $ sudo cp ~/tpm2-cmd-ref/nginx/openssl.cnf /usr/lib/ssl/openssl.cnf
 ```
 
-Terminate TPM resource manager so Nginx can directly access the TPM via tcti `mssim:host=127.0.0.1,port=2321`:
-```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
-$ pkill tpm2-abrmd
-$ sleep 5
-```
-
 #### PEM Encoded Key Object
 
 Create key & self-signed certificate:
@@ -1573,6 +1567,12 @@ Edit `/etc/nginx/sites-enabled/default` to enable SSL, check reference [nginx/de
 $ sudo cp ~/tpm2-cmd-ref/nginx/default-pem /etc/nginx/sites-enabled/default
 ```
 
+Terminate TPM resource manager so Nginx can directly access the TPM via tcti `mssim:host=127.0.0.1,port=2321`:
+```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
+$ pkill tpm2-abrmd
+$ sleep 5
+```
+
 Restart Nginx:
 ```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
 $ sudo service nginx restart
@@ -1581,6 +1581,12 @@ $ sudo service nginx restart
 Using Curl to test the connection:
 ```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
 $ curl --insecure --engine tpm2tss --key-type ENG --key rsakey.pem --cert rsakey.crt.pem https://127.0.0.1
+```
+
+Start TPM resource manager:
+```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
+$ tpm2-abrmd --allow-root --session --tcti=mssim &
+$ sleep 5
 ```
 
 #### Persistent Key
@@ -1599,6 +1605,12 @@ Edit `/etc/nginx/sites-enabled/default` to enable SSL, check reference [nginx/de
 $ sudo cp ~/tpm2-cmd-ref/nginx/default-persistent /etc/nginx/sites-enabled/default
 ```
 
+Terminate TPM resource manager so Nginx can directly access the TPM via tcti `mssim:host=127.0.0.1,port=2321`:
+```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
+$ pkill tpm2-abrmd
+$ sleep 5
+```
+
 Restart Nginx:
 ```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
 $ sudo service nginx restart
@@ -1607,6 +1619,12 @@ $ sudo service nginx restart
 Using Curl to test the connection:
 ```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
 $ curl --insecure --engine tpm2tss --key-type ENG --key 0x81000002 --cert rsakey.crt.pem https://127.0.0.1
+```
+
+Start TPM resource manager:
+```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
+$ tpm2-abrmd --allow-root --session --tcti=mssim &
+$ sleep 5
 ```
 
 #### Housekeeping
@@ -1621,11 +1639,6 @@ Stop Nginx:
 $ sudo service nginx stop
 ```
 
-Restart TPM resource manager:
-```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
-$ tpm2-abrmd --allow-root --session --tcti=mssim &
-$ sleep 5
-```
 ## OpenSSL 1.x Library
 
 This section is for Debian (Bullseye, Buster), Ubuntu (18.04, 20.04).
