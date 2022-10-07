@@ -3859,7 +3859,7 @@ $ tss2_delete -p /P_ECCP256SHA256/HS/SRK/LeafKey
 $ rm message message.* key.*
 ```
 
-# CI
+# CI Self Test
 
 Manually trigger the CI workflow using the following command:
 
