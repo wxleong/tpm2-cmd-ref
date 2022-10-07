@@ -415,10 +415,10 @@ $ tpm2_flushcontext session.ctx
 
 $ tpm2_verifysignature -c signing.key.ctx -g sha256 -m attest.out -s signature.out
 ```
-The `attest.out` is:
+The `attest.out` structure:
 - TPM2B_ATTEST ->
     - TPMS_ATTEST ->
-        - TPMI_ST_ATTEST with the value of TPM_ST_ATTEST_CERTIFY, it determines the data type of TPMU_ATTEST
+        - TPMI_ST_ATTEST = TPM_ST_ATTEST_CERTIFY, it determines the data type of TPMU_ATTEST
         - TPMU_ATTEST ->
             - TPMS_CERTIFY_INFO ->
                 - Qualified Name of the certified object
@@ -466,7 +466,7 @@ $ tpm2_verifysignature -c signing.key.ctx -g sha256 -m attest.out -s signature.o
 
 <ins><b>tpm2_nvcertify</b></ins>
 
-Provides attestation of the contents of an NV index. An example:
+Provides attestation of the content of an NV index. An example:
 
 ```all
 $ dd bs=1 count=32 </dev/urandom >data
@@ -490,7 +490,7 @@ $ tpm2_nvundefine 0x01000000 -C o
 
 Another example involving policy:
 ```all
-# Create a policy to restrict the usage of a signing key to only command TPM2_CC_CertifyCreation
+# Create a policy to restrict the usage of a signing key to only command TPM2_CC_NV_Certify
 $ tpm2_startauthsession -S session.ctx
 $ tpm2_policycommandcode -S session.ctx -L policy.ctx TPM2_CC_NV_Certify
 $ tpm2_flushcontext session.ctx
@@ -1562,13 +1562,13 @@ Edit `/etc/nginx/sites-enabled/default` to enable SSL, check reference [nginx/de
 $ sudo cp ~/tpm2-cmd-ref/nginx/default-pem /etc/nginx/sites-enabled/default
 ```
 
-Terminate TPM resource manager so Nginx can directly access the TPM via tcti `mssim:host=127.0.0.1,port=2321`:
+Terminate TPM resource manager so Nginx can directly access TPM via tcti `mssim:host=127.0.0.1,port=2321`:
 ```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
 $ pkill tpm2-abrmd
 $ sleep 5
 ```
 
-Edit the default `openssl.cnf`:
+Overwrite the `openssl.cnf`:
 ```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
 $ mv /usr/lib/ssl/openssl.cnf /usr/lib/ssl/openssl.cnf.bkup
 $ cp ~/tpm2-cmd-ref/nginx/openssl.cnf /usr/lib/ssl/openssl.cnf
@@ -1611,13 +1611,13 @@ Edit `/etc/nginx/sites-enabled/default` to enable SSL, check reference [nginx/de
 $ sudo cp ~/tpm2-cmd-ref/nginx/default-persistent /etc/nginx/sites-enabled/default
 ```
 
-Terminate TPM resource manager so Nginx can directly access the TPM via tcti `mssim:host=127.0.0.1,port=2321`:
+Terminate TPM resource manager so Nginx can directly access TPM via tcti `mssim:host=127.0.0.1,port=2321`:
 ```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
 $ pkill tpm2-abrmd
 $ sleep 5
 ```
 
-Edit the default `openssl.cnf`:
+Overwrite the `openssl.cnf`:
 ```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
 $ mv /usr/lib/ssl/openssl.cnf /usr/lib/ssl/openssl.cnf.bkup
 $ cp ~/tpm2-cmd-ref/nginx/openssl.cnf /usr/lib/ssl/openssl.cnf
