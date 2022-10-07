@@ -36,6 +36,7 @@ OPTIGA™ TPM 2.0 command reference and code examples.
         - **[Nginx & Curl](#nginx--curl)**
             - **[PEM Encoded Key Object](#pem-encoded-key-object-1)**
             - **[Persistent Key](#persistent-key-2)**
+            - **[Housekeeping](#housekeeping)**
     - **[OpenSSL 1.x Library](#openssl-1x-library)**
         - **[General Examples](#general-examples)**
         - **[Server-client TLS Communication](#server-client-tls-communication-1)**
@@ -198,7 +199,7 @@ $ git clone https://github.com/tpm2-software/tpm2-tss-engine ~/tpm2-tss-engine
 $ cd ~/tpm2-tss-engine
 $ git checkout v1.1.0
 $ ./bootstrap
-$ ./configure
+$ ./configure <--- optional: "--enable-debug"
 $ make -j$(nproc)
 $ sudo make install
 $ sudo ldconfig
@@ -210,7 +211,7 @@ $ git clone https://github.com/tpm2-software/tpm2-openssl ~/tpm2-openssl
 $ cd ~/tpm2-openssl
 $ git checkout 1.1.0
 $ ./bootstrap
-$ ./configure <--- to debug add "--enable-debug"
+$ ./configure <--- optional: "--enable-debug"
 $ make -j$(nproc) <--- "$ make check" to execute self-test. Do not run test in multithreading mode
 $ sudo make install
 $ sudo ldconfig
@@ -413,10 +414,10 @@ $ tpm2_flushcontext session.ctx
 
 $ tpm2_verifysignature -c signing.key.ctx -g sha256 -m attest.out -s signature.out
 ```
-The `attest.out` is:
+The `attest.out` structure:
 - TPM2B_ATTEST ->
     - TPMS_ATTEST ->
-        - TPMI_ST_ATTEST with the value of TPM_ST_ATTEST_CERTIFY, it determines the data type of TPMU_ATTEST
+        - TPMI_ST_ATTEST = TPM_ST_ATTEST_CERTIFY, it determines the data type of TPMU_ATTEST
         - TPMU_ATTEST ->
             - TPMS_CERTIFY_INFO ->
                 - Qualified Name of the certified object
@@ -464,7 +465,7 @@ $ tpm2_verifysignature -c signing.key.ctx -g sha256 -m attest.out -s signature.o
 
 <ins><b>tpm2_nvcertify</b></ins>
 
-Provides attestation of the contents of an NV index. An example:
+Provides attestation of the content of an NV index. An example:
 
 ```all
 $ dd bs=1 count=32 </dev/urandom >data
@@ -488,7 +489,7 @@ $ tpm2_nvundefine 0x01000000 -C o
 
 Another example involving policy:
 ```all
-# Create a policy to restrict the usage of a signing key to only command TPM2_CC_CertifyCreation
+# Create a policy to restrict the usage of a signing key to only command TPM2_CC_NV_Certify
 $ tpm2_startauthsession -S session.ctx
 $ tpm2_policycommandcode -S session.ctx -L policy.ctx TPM2_CC_NV_Certify
 $ tpm2_flushcontext session.ctx
@@ -1531,21 +1532,19 @@ $ tpm2_clear -c p
 
 ### Nginx & Curl
 
-**to-do: This section is broken, to be fixed**
-
 <!--
 nginx -V
 cat /var/log/nginx/error.log
 -->
 
-Install Nginx on your host:
+Install Nginx and Curl on your host:
 ```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
-$ sudo apt install -y nginx
+$ sudo apt install -y nginx curl
 ```
 
 Add `ssl_engine tpm2tss;` to `/etc/nginx/nginx.conf`, check reference [nginx/nginx.conf](nginx/nginx.conf)
-```exclude
-$ sudo echo "ssl_engine tpm2tss;" >> /etc/nginx/nginx.conf
+```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
+$ sudo cp ~/tpm2-cmd-ref/nginx/nginx.conf /etc/nginx/nginx.conf
 ```
 
 #### PEM Encoded Key Object
@@ -1562,14 +1561,37 @@ Edit `/etc/nginx/sites-enabled/default` to enable SSL, check reference [nginx/de
 $ sudo cp ~/tpm2-cmd-ref/nginx/default-pem /etc/nginx/sites-enabled/default
 ```
 
+Terminate TPM resource manager so Nginx can directly access TPM via tcti `mssim:host=127.0.0.1,port=2321`:
+```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
+$ pkill tpm2-abrmd
+$ sleep 5
+```
+
+Overwrite the `openssl.cnf`:
+```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
+$ mv /usr/lib/ssl/openssl.cnf /usr/lib/ssl/openssl.cnf.bkup
+$ cp ~/tpm2-cmd-ref/nginx/openssl.cnf /usr/lib/ssl/openssl.cnf
+```
+
 Restart Nginx:
-```exclude
+```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
 $ sudo service nginx restart
 ```
 
 Using Curl to test the connection:
-```exclude
+```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
 $ curl --insecure --engine tpm2tss --key-type ENG --key rsakey.pem --cert rsakey.crt.pem https://127.0.0.1
+```
+
+Start TPM resource manager:
+```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
+$ tpm2-abrmd --allow-root --session --tcti=mssim &
+$ sleep 5
+```
+
+Restore `openssl.cnf`:
+```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
+$ mv /usr/lib/ssl/openssl.cnf.bkup /usr/lib/ssl/openssl.cnf
 ```
 
 #### Persistent Key
@@ -1588,19 +1610,49 @@ Edit `/etc/nginx/sites-enabled/default` to enable SSL, check reference [nginx/de
 $ sudo cp ~/tpm2-cmd-ref/nginx/default-persistent /etc/nginx/sites-enabled/default
 ```
 
+Terminate TPM resource manager so Nginx can directly access TPM via tcti `mssim:host=127.0.0.1,port=2321`:
+```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
+$ pkill tpm2-abrmd
+$ sleep 5
+```
+
+Overwrite the `openssl.cnf`:
+```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
+$ mv /usr/lib/ssl/openssl.cnf /usr/lib/ssl/openssl.cnf.bkup
+$ cp ~/tpm2-cmd-ref/nginx/openssl.cnf /usr/lib/ssl/openssl.cnf
+```
+
 Restart Nginx:
-```exclude
+```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
 $ sudo service nginx restart
 ```
 
 Using Curl to test the connection:
-```exclude
+```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
 $ curl --insecure --engine tpm2tss --key-type ENG --key 0x81000002 --cert rsakey.crt.pem https://127.0.0.1
 ```
 
-House keeping:
+Start TPM resource manager:
+```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
+$ tpm2-abrmd --allow-root --session --tcti=mssim &
+$ sleep 5
+```
+
+Restore `openssl.cnf`:
+```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
+$ mv /usr/lib/ssl/openssl.cnf.bkup /usr/lib/ssl/openssl.cnf
+```
+
+#### Housekeeping
+
+Reset TPM:
 ```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
 $ tpm2_clear -c p
+```
+
+Stop Nginx:
+```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
+$ sudo service nginx stop
 ```
 
 ## OpenSSL 1.x Library
@@ -3383,27 +3435,29 @@ One-time provision:
     {
         "profile_name": "P_RSA2048SHA256",
         "profile_dir": "/usr/local/etc/tpm2-tss/fapi-profiles/",
-        "user_dir": "/home/pi/.local/share/tpm2-tss/user/keystore/",
-        "system_dir": "/home/pi/.local/share/tpm2-tss/system/keystore/",
+        "user_dir": "/tmp/tpm2-tss/user/keystore/",
+        "system_dir": "/tmp/tpm2-tss/system/keystore/",
         "tcti": "tabrmd:bus_type=session",
         "ek_cert_less": "yes",
         "system_pcrs" : [],
-        "log_dir" : "/home/pi/.local/share/tpm2-tss/eventlog/"
+        "log_dir" : "/tmp/tpm2-tss/eventlog/"
     }
     ```
     Let's automate the change:
-    ```all
-    $ sudo su -c 'rm /usr/local/etc/tpm2-tss/fapi-config.json'
-    $ sudo su -c 'echo "{" > /usr/local/etc/tpm2-tss/fapi-config.json'
-    $ sudo su -c 'echo "     \"profile_name\": \"P_RSA2048SHA256\"," >> /usr/local/etc/tpm2-tss/fapi-config.json'
-    $ sudo su -c 'echo "     \"profile_dir\": \"/usr/local/etc/tpm2-tss/fapi-profiles/\"," >> /usr/local/etc/tpm2-tss/fapi-config.json'
-    $ sudo su -c 'echo "     \"user_dir\": \"/home/pi/.local/share/tpm2-tss/user/keystore/\"," >> /usr/local/etc/tpm2-tss/fapi-config.json'
-    $ sudo su -c 'echo "     \"system_dir\": \"/home/pi/.local/share/tpm2-tss/system/keystore/\"," >> /usr/local/etc/tpm2-tss/fapi-config.json'
-    $ sudo su -c 'echo "     \"tcti\": \"tabrmd:bus_type=session\"," >> /usr/local/etc/tpm2-tss/fapi-config.json'
-    $ sudo su -c 'echo "     \"ek_cert_less\": \"yes\"," >> /usr/local/etc/tpm2-tss/fapi-config.json'
-    $ sudo su -c 'echo "     \"system_pcrs\" : []," >> /usr/local/etc/tpm2-tss/fapi-config.json'
-    $ sudo su -c 'echo "     \"log_dir\" : \"/home/pi/.local/share/tpm2-tss/eventlog/\"" >> /usr/local/etc/tpm2-tss/fapi-config.json'
-    $ sudo su -c 'echo "}" >> /usr/local/etc/tpm2-tss/fapi-config.json'
+    ```all,timeless
+    $ rm /usr/local/etc/tpm2-tss/fapi-config.json
+    $ cat > /usr/local/etc/tpm2-tss/fapi-config.json << EOF
+    $ {
+    $     "profile_name": "P_RSA2048SHA256",
+    $     "profile_dir": "/usr/local/etc/tpm2-tss/fapi-profiles/",
+    $     "user_dir": "/tmp/tpm2-tss/user/keystore/",
+    $     "system_dir": "/tmp/tpm2-tss/system/keystore/",
+    $     "tcti": "tabrmd:bus_type=session",
+    $     "ek_cert_less": "yes",
+    $     "system_pcrs" : [],
+    $     "log_dir" : "/tmp/tpm2-tss/eventlog/"
+    $ }
+    $ EOF
     $ cat /usr/local/etc/tpm2-tss/fapi-config.json
     ```
 2. Reset the FAPI database:
@@ -3821,7 +3875,7 @@ $ tss2_delete -p /P_ECCP256SHA256/HS/SRK/LeafKey
 $ rm message message.* key.*
 ```
 
-# CI
+# CI Self Test
 
 Manually trigger the CI workflow using the following command:
 
