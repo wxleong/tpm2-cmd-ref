@@ -37,6 +37,7 @@ OPTIGA™ TPM 2.0 command reference and code examples.
         - **[Nginx & Curl](#nginx--curl)**
             - **[PEM Encoded Key Object](#pem-encoded-key-object-1)**
             - **[Persistent Key](#persistent-key-2)**
+            - **[Housekeeping](#housekeeping)**
     - **[OpenSSL 1.x Library](#openssl-1x-library)**
         - **[General Examples](#general-examples)**
         - **[Server-client TLS Communication](#server-client-tls-communication-1)**
@@ -199,7 +200,7 @@ $ git clone https://github.com/tpm2-software/tpm2-tss-engine ~/tpm2-tss-engine
 $ cd ~/tpm2-tss-engine
 $ git checkout v1.1.0
 $ ./bootstrap
-$ ./configure
+$ ./configure <--- optional: "--enable-debug"
 $ make -j$(nproc)
 $ sudo make install
 $ sudo ldconfig
@@ -211,7 +212,7 @@ $ git clone https://github.com/tpm2-software/tpm2-openssl ~/tpm2-openssl
 $ cd ~/tpm2-openssl
 $ git checkout 1.1.0
 $ ./bootstrap
-$ ./configure <--- to debug add "--enable-debug"
+$ ./configure <--- optional: "--enable-debug"
 $ make -j$(nproc) <--- "$ make check" to execute self-test. Do not run test in multithreading mode
 $ sudo make install
 $ sudo ldconfig
@@ -1532,21 +1533,30 @@ $ tpm2_clear -c p
 
 ### Nginx & Curl
 
-**to-do: This section is broken, to be fixed**
-
 <!--
 nginx -V
 cat /var/log/nginx/error.log
 -->
 
-Install Nginx on your host:
+Install Nginx and Curl on your host:
 ```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
-$ sudo apt install -y nginx
+$ sudo apt install -y nginx curl
 ```
 
 Add `ssl_engine tpm2tss;` to `/etc/nginx/nginx.conf`, check reference [nginx/nginx.conf](nginx/nginx.conf)
-```exclude
-$ sudo echo "ssl_engine tpm2tss;" >> /etc/nginx/nginx.conf
+```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
+$ sudo cp ~/tpm2-cmd-ref/nginx/nginx.conf /etc/nginx/nginx.conf
+```
+
+Edit the default `openssl.cnf`:
+```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
+$ sudo cp ~/tpm2-cmd-ref/nginx/openssl.cnf /usr/lib/ssl/openssl.cnf
+```
+
+Terminate TPM resource manager so Nginx can directly access the TPM via tcti `mssim:host=127.0.0.1,port=2321`:
+```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
+$ pkill tpm2-abrmd
+$ sleep 5
 ```
 
 #### PEM Encoded Key Object
@@ -1564,12 +1574,12 @@ $ sudo cp ~/tpm2-cmd-ref/nginx/default-pem /etc/nginx/sites-enabled/default
 ```
 
 Restart Nginx:
-```exclude
+```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
 $ sudo service nginx restart
 ```
 
 Using Curl to test the connection:
-```exclude
+```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
 $ curl --insecure --engine tpm2tss --key-type ENG --key rsakey.pem --cert rsakey.crt.pem https://127.0.0.1
 ```
 
@@ -1590,20 +1600,32 @@ $ sudo cp ~/tpm2-cmd-ref/nginx/default-persistent /etc/nginx/sites-enabled/defau
 ```
 
 Restart Nginx:
-```exclude
+```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
 $ sudo service nginx restart
 ```
 
 Using Curl to test the connection:
-```exclude
+```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
 $ curl --insecure --engine tpm2tss --key-type ENG --key 0x81000002 --cert rsakey.crt.pem https://127.0.0.1
 ```
 
-House keeping:
+#### Housekeeping
+
+Reset TPM:
 ```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
 $ tpm2_clear -c p
 ```
 
+Stop Nginx:
+```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
+$ sudo service nginx stop
+```
+
+Restart TPM resource manager:
+```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
+$ tpm2-abrmd --allow-root --session --tcti=mssim &
+$ sleep 5
+```
 ## OpenSSL 1.x Library
 
 This section is for Debian (Bullseye, Buster), Ubuntu (18.04, 20.04).
