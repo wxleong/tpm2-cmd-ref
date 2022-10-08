@@ -318,7 +318,7 @@ Test installation:
 
 # Setup on Raspberry Pi
 
-For detailed Raspberry Pi setup guide please visit [[8]](#8).
+<!-- For detailed Raspberry Pi setup guide please visit [[8]](#8). -->
 
 You may explicitly set the TCTI to device node `tpm0` or `tpmrm0`:
 ```exclude
@@ -3917,7 +3917,7 @@ $ docker run  --cpus=%NUMBER_OF_PROCESSORS% ^
 <a id="5">[5] https://github.com/tpm2-software/tpm2-tss-engine</a><br>
 <a id="6">[6] https://github.com/Infineon/ek-based-onboarding-optiga-tpm</a><br>
 <a id="7">[7] https://github.com/Infineon/pkcs11-optiga-tpm</a><br>
-<a id="8">[8] https://github.com/wxleong/tpm2-rpi4</a><br>
+<!--<a id="8">[8] https://github.com/wxleong/tpm2-rpi4</a><br>-->
 <a id="9">[9] https://trustedcomputinggroup.org/resource/tpm-library-specification/</a><br>
 <a id="10">[10] https://www.infineon.com/cms/en/product/evaluation-boards/iridium9670-tpm2.0-linux/</a><br>
 <a id="11">[11] https://github.com/tpm2-software/tpm2-tss/blob/master/src/tss2-tcti/tcti-device.c#L371</a><br>
