@@ -1,5 +1,8 @@
 [![example workflow](https://github.com/wxleong/tpm2-cmd-ref/workflows/CI/badge.svg?branch=master)](https://github.com/wxleong/tpm2-cmd-ref/actions)
 
+# DEPRECATED/UNMAINTAINED
+This repository has been archived on Oct 17, 2022 and moved to https://github.com/Infineon/optiga-tpm-cheatsheet.
+
 # Introduction
 
 OPTIGA™ TPM 2.0 command reference and code examples.
